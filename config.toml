@@ -8,7 +8,7 @@ layoutdir = "layouts"
 publishdir = "public"
 author = "Tim Mastny"
 title = "Tim Mastny"
-disqusshortname = "tim_mastny"
+disqusshortname = "https-timmastny-netlify-com"
 pluralizelisttitles = false
 
 [permalinks]
