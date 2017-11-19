@@ -8,7 +8,7 @@ layoutdir = "layouts"
 publishdir = "public"
 author = "Tim Mastny"
 title = "Tim Mastny"
-disqusshortname = ""
+disqusshortname = "@tim_mastny"
 pluralizelisttitles = false
 
 [permalinks]
