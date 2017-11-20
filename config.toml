@@ -34,3 +34,4 @@ posts_navigation = true
 small_banner_logo = false
 latestpostcount = 5
 uselatex = true
+githubRepo = "tmastny/website"
