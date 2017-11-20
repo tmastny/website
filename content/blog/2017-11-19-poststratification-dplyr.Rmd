@@ -48,7 +48,9 @@ equals
 \bar{X} &= \frac{1}{75}\sum_{i=1}^{75}x_i
 \end{align}
 
-It is rare though that we the have results from the full population. Due to varying rates of non-response, at best we might be able to assume we have a random sample for each demographic group within the population. This implies that the number of people surveyed in each group may not be in proportion to the the whole population. For example, suppose this is another survey on the same population, over demographics `A` and `B`:
+Rarely in practice do we have results for the entire population. So we send out a survey to a sample of that population to estimate opinion. If the survey turns out to be representative, great. More likely, the demographic groups within the survey are non-representative, sometimes [intentionally (or inevitably) so](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/04/forecasting-with-nonrepresentative-polls.pdf). That means that the demographic groups are not in proportion to the total population. 
+
+For example, suppose this is a survey on the same population with demographic groups `A` and `B`:
 
 ```{r}
 library(tidyverse)
@@ -116,7 +118,7 @@ where $N$ is the total number of subgroups. As we'll see in the next post, we ca
 
 ## Another example
 
-Next, let's use an example from a real survey. We will use data from the book [Complex Surveys: A Guide to Analysis Using R](http://r-survey.r-forge.r-project.org/svybook/) by Thomas Lumley. 
+Next, let's use an example from a real survey. I'll use data from the book [Complex Surveys: A Guide to Analysis Using R](http://r-survey.r-forge.r-project.org/svybook/) by Thomas Lumley. 
 
 ```{r}
 library(survey)
@@ -171,7 +173,7 @@ which shows that our poststratification was a good approximation.
 
 The standard application of MRP is estimating state-level opinions by taking the weighted average of demographic group averages within the each state. That is an extension of the process we used in the previous examples.
 
-However, the mean is only one statistc. Other times we are interested in the total, or statistics that are functions of the total. We then need a way to poststratify the sample totals. Let's explore poststratifying the total using the same data set. 
+However, the mean is only one statistc. Other times we are interested in the total, or statistics that are functions of the total. We then need a way to poststratify the sample totals.
 
 Of course estimating total test scores isn't very useful. Instead I'll use school enrollment data, because total student enrollment has clear policy implications.
 
@@ -186,7 +188,7 @@ d.group.enroll <- d %>%
 d.group.enroll
 ```
 
-It is clear we need a correction to find $T(X)$. If only 50 of the high schools surveyed have 66035 students enrolled, the total enrollment for all 755 high schools will be much higher. 
+It is clear we need a correction to find $T(X)$. If 50 of the high schools surveyed have 66035 students enrolled, the total enrollment for all 755 high schools will be much higher. 
 
 In the previous section, we made the assumption that the expected sample mean of a subgroup equals the population mean of the subgroup. For the total statistic we need a similar assumption: that the expected total enrollment in $n$ schools of a certain type equals the expected value of another random sample of $n$ schools of the same type.
 
@@ -247,7 +249,7 @@ which is exactly the same mean we found before.
 
 ## Conclusion
 
-In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. As you'll see in the next post, using regression averages instead of empirical averages allows us to be even more confident in our results.
+In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. As you'll see in the next post, using regression averages instead of empirical averages gives better results.
 
 We also showed that poststratifying averages is a special case of poststratifying the total. For surveys we are typically interested in estimating the mean, but the total statistic provides insight into the weighted average correction and into generalizing poststratification to other statistics. Moreover, finding the total can be an useful problem in its own right. There is the classic [German tanks problem](https://en.wikipedia.org/wiki/German_tank_problem), estimating [immigration](http://www.pewresearch.org/fact-tank/2016/09/20/measuring-illegal-immigration-how-pew-research-center-counts-unauthorized-immigrants-in-the-u-s/), or investigating problems [with the Census](http://andrewgelman.com/2010/02/02/problems_with_c_1/). 
 
