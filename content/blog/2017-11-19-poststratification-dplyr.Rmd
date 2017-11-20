@@ -65,7 +65,7 @@ Census <- tibble(
 )
 ```
 
-We see this directly by comparing this mean
+We see this directly by comparing the mean
 
 ```{r}
 mean(poll_data$yes)
@@ -73,7 +73,7 @@ mean(poll_data$yes)
 
 to the overall population mean shown above. 
 
-How then do we estimate the overall population mean based on `poll_data`? We need to correct based on our Census data, knowing that each mean represents only a certain certaion of the population. This is poststratification. 
+How then do we estimate the overall population mean based on `poll_data`? We need to correct based on our Census data, knowing that each mean represents only a certain percentage of the population. This is poststratification. 
 
 Let $X_a = x_{a1}, x_{a2}, \dots, x_{a25}$ and $X_b = x_{b1}, x_{b2}, \dots, x_{b50}$ be the data indicating support for each demographic. Then using $\bar{X}$, we have
 
@@ -99,6 +99,11 @@ overall_support <- group_support %>%
 overall_support
 ```
 
+This gives us a general way to poststratify averages. If we know the percentage $p_i$ of the total population for each subgroup $X_i$, then we can find the poststratified population average $\bar{X}_{\text{post}}$ by
+\begin{align}
+\bar{X}_{\text{post}} &= \sum_{i = 1}^N p_i \bar{X}_i
+\end{align}
+where $N$ is the total number of subgroups. As we'll see in the next post, we can get the subgroup averages from (multilevel) regressing on the poll outcome for each demographic group. 
 
 ## Another example
 
@@ -155,11 +160,11 @@ which shows that our poststratification was a pretty good approximation.
 
 ### The Total Statistic
 
-So far we have been taking the weighted averages of subgroup averages to find the total population average. As you'll see in the MRP article, this is usually what we want. However, let's explore how poststratification works for the total statistics, and see how we can generalize the total statistic to other statistics that require a total.  
+So far we have been taking the weighted averages of subgroup averages to find the total population average. This is usually what we want when we are doing MRP, because regressing gives us the averages for each group. However, many statistics are actually functions of the total statistic. Let's explore poststratifying the total, and see how it relates back to the weighed average.
 
-It doesn't make much sense to estimate the total test scores, but it does for enrollment. 
+It doesn't make much sense to estimate the total test scores, but it does for enrollment. I'll use that as our example. 
 
-Let $X = x_1, x_2, \dots, x_{6194}$ be the students enrolled at each school. Then $T(X) = \sum_{i=1}^{6194}x_i$ is the total number of students enrolled. Then $T(X) = T(X_e) + T(X_h) + T(X_m)$ where $X_e, X_h, X_m$ are the enrollment data by school type. 
+Let $X = x_1, x_2, \dots, x_{6194}$ be the students enrolled at each school. Then $T(X) = \sum_{i=1}^{6194}x_i$ is the total number of students enrolled, with $T(X) = T(X_e) + T(X_h) + T(X_m)$ where $X_e, X_h, X_m$ are the enrollment data by school type. 
 
 In our school survey, the total enrollment for each school type is
 
@@ -170,9 +175,11 @@ d.group.enroll <- d %>%
 d.group.enroll
 ```
 
-Again, it is clear we need a correction to find $T(X)$. If only 50 of the high schools surveyed have 66035 students enrolled the total enrollment for all 755 high schools, let alone all schools, will be much higher. 
+It is clear we need a correction to find $T(X)$. If only 50 of the high schools surveyed have 66035 students enrolled, the total enrollment for all 755 high schools will be much higher. 
 
-In the previous section, we made the assumption that the expected mean of subgroup samples equals the mean of the subgroup. Now we need to make a similiar assumption: that the expected total enrollment in $n$ schools of a certain type is the same as another random sample of $n$ schools of the same type in the population. In other words, we need to assume that
+In the previous section, we made the assumption that the expected sample mean of a subgroup equals the population mean of the subgroup. For the total statistic we need a similar assumption: that the expected total enrollment in $n$ schools of a certain type equals the expected value of another random sample of $n$ schools of the same type in the population. 
+
+In other words, we need to assume that the number of enrolled students in our sample should be approximately equal to the number of enrolled students in another sample of the same size. Mathematically, 
 
 \begin{align}
 T(X_h) &= \sum_{i=1}^{755}x_{hi} \\
@@ -190,14 +197,14 @@ d.tot.enroll <- d.group.enroll %>%
 d.tot.enroll
 ```
 
-This type of poststratification gives us a pretty decent estimate.
+This type of poststratification gives us a pretty decent total estimate.
 
 ```{r}
 apipop %>% as.tibble() %>%
   summarise(total=sum(enroll, na.rm=TRUE))
 ```
 
-### Generalizing
+### Totals and Weighted Averaging
 
 The weighted average of subgroup averages is actually a special case of this total-based poststratification method. Let's consider average test scores again, where $\hat{X}_e, \hat{X}_h, \hat{X}_m$ is the test score data for each school type in our survey, with $X_e, X_h, X_m$ being the population score data by school type. Then by definition, the average
 
@@ -225,6 +232,12 @@ d.api.mean
 ```
 
 which is exactly the same mean we found before. 
+
+## Conclusion
+
+In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. And as you'll see in the next post, we want to find these averages by regression instead of the empirical means we showed here.
+
+We also showed that poststratifying averages is a special case of poststratifying the total. With surveys we are typically interested in estimating the mean, but the total statistic gives insight to weighted average correct, and how we could apply this idea to other statistics. Moreover, finding the total can be an useful problem in its own right. There is the classic [German tanks problem](https://en.wikipedia.org/wiki/German_tank_problem), estimating [immigration](http://www.pewresearch.org/fact-tank/2016/09/20/measuring-illegal-immigration-how-pew-research-center-counts-unauthorized-immigrants-in-the-u-s/), or investigating problems [with the Census](http://andrewgelman.com/2010/02/02/problems_with_c_1/). 
 
 
 
