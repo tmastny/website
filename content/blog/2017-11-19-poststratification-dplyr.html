@@ -62,7 +62,7 @@ Census</code></pre>
 <pre class="r"><code>mean(poll_data$yes)</code></pre>
 <pre><code>## [1] 0.6285714</code></pre>
 <p>to the overall population mean shown above.</p>
-<p>How then do we estimate the overall population mean based on <code>poll_data</code>? We need to correct based on our Census data, knowing that each mean represents only a certain percentage of the population. This is poststratification.</p>
+<p>How then do we estimate the overall population mean based on <code>poll_data</code>? We need a correction based on our Census data, knowing that each mean represents only a certain percentage of the population. This is poststratification.</p>
 <p>Let <span class="math inline">\(X_a = x_{a1}, x_{a2}, \dots, x_{a25}\)</span> and <span class="math inline">\(X_b = x_{b1}, x_{b2}, \dots, x_{b50}\)</span> be the data indicating support for each demographic. Then using <span class="math inline">\(\bar{X}\)</span>, we have</p>
 <span class="math display">\[\begin{align*}
 \bar{X} &amp;= \frac{1}{75}\sum_{i=1}^{75}x_i \\
@@ -93,11 +93,11 @@ This gives us a general way to poststratify averages. If we know the percentage 
 <span class="math display">\[\begin{align}
 \bar{X}_{\text{post}} &amp;= \sum_{i = 1}^N p_i \bar{X}_i
 \end{align}\]</span>
-<p>where <span class="math inline">\(N\)</span> is the total number of subgroups. As we’ll see in the next post, we can get the subgroup averages from (multilevel) regressing on the poll outcome for each demographic group.</p>
+<p>where <span class="math inline">\(N\)</span> is the total number of subgroups. As we’ll see in the next post, we can get the subgroup averages by (multilevel) regressing on the poll outcome for each demographic group.</p>
 </div>
 <div id="another-example" class="section level2">
 <h2>Another example</h2>
-<p>Next, let’s us a more complex example to demonstrate some alternative implementations of poststratification. Here, we will use the data from the book <a href="http://r-survey.r-forge.r-project.org/svybook/">Complex Surveys: A Guide to Analysis Using R</a> by Thomas Lumley.</p>
+<p>Next, let’s use an example from a real survey. We will use data from the book <a href="http://r-survey.r-forge.r-project.org/svybook/">Complex Surveys: A Guide to Analysis Using R</a> by Thomas Lumley.</p>
 <pre class="r"><code>library(survey)
 data(api)</code></pre>
 <p>The data set <code>api</code> is the California Academic Performance Index that surveys all 6194 California schools, which includes 4421 elementary schools, 755 high schools, and 1018 middle schools. This information will be our Census data.</p>
@@ -116,8 +116,8 @@ d %&gt;%
 ## 1      E          100
 ## 2      H           50
 ## 3      M           50</code></pre>
-<p>which is not representative. For reference, on page 23 of his book, Lumley analyzes this data set using his package <code>survey</code>.</p>
-<p>Since this school types are not in proportion to the total population, we need to do poststratification. Proceeding as before</p>
+<p>which is not representative. For reference, Lumley analyzes this data set on page 23 of his book using his package <code>survey</code>.</p>
+<p>Since the school types are not in proportion to the total population, we need to do poststratification. Proceeding as before</p>
 <pre class="r"><code>d.group.ave &lt;- d %&gt;% 
   group_by(stype) %&gt;%
   summarise(ave_score = mean(api00))
@@ -145,8 +145,9 @@ d.total.ave</code></pre>
 <p>which shows that our poststratification was a pretty good approximation.</p>
 <div id="the-total-statistic" class="section level3">
 <h3>The Total Statistic</h3>
-<p>So far we have been taking the weighted averages of subgroup averages to find the total population average. This is usually what we want when we are doing MRP, because we are usually trying to estimate the total state average. However, averages are actually functions of the total statistic, which can also be useful in its own right. Let’s explore poststratifying the total, and see how it relates back to the weighed average.</p>
-<p>Estimating total test scores doesn’t seem very useful, but estimating total enrollment could be important for policy decisions. I’ll use that as our example.</p>
+<p>The standard application of MRP is estimating state-level opinions by taking the weighted average of demographic group averages within the each state. That is a basic extension of the process we used in the previous examples.</p>
+<p>However, the mean is only one statistc. Other times we are interested in the total, or statistics that are a function of the total. We then need a way to poststratify the sample totals. Let’s explore total poststratification using the same data.</p>
+<p>Of course estimating total test scores isn’t very useful. Instead, I’ll use school enrollment data, which has clear policy implications.</p>
 <p>Let <span class="math inline">\(X = x_1, x_2, \dots, x_{6194}\)</span> be the students enrolled at each school. Then <span class="math inline">\(T(X) = \sum_{i=1}^{6194}x_i\)</span> is the total number of students enrolled, with <span class="math inline">\(T(X) = T(X_e) + T(X_h) + T(X_m)\)</span> where <span class="math inline">\(X_e, X_h, X_m\)</span> are the enrollment data by school type.</p>
 <p>In our school survey, the total enrollment for each school type is</p>
 <pre class="r"><code>d.group.enroll &lt;- d %&gt;% 
