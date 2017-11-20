@@ -74,6 +74,7 @@ group_support</code></pre>
 ##   &lt;chr&gt;        &lt;dbl&gt;
 ## 1     A         0.76
 ## 2     B         0.30</code></pre>
+<p>And we can use the derived formula to calculate the population mean in R.</p>
 <pre class="r"><code>overall_support &lt;- group_support %&gt;%
   summarise(total_support = sum(perc_support * Census$pop/sum(Census$pop)))
 overall_support</code></pre>
@@ -137,8 +138,8 @@ d.total.ave</code></pre>
 <p>which shows that our poststratification was a pretty good approximation.</p>
 <div id="the-total-statistic" class="section level3">
 <h3>The Total Statistic</h3>
-<p>So far we have been taking the weighted averages of subgroup averages to find the total population average. This is usually what we want when we are doing MRP, because regressing gives us the averages for each group. However, many statistics are actually functions of the total statistic. Let’s explore poststratifying the total, and see how it relates back to the weighed average.</p>
-<p>It doesn’t make much sense to estimate the total test scores, but it does for enrollment. I’ll use that as our example.</p>
+<p>So far we have been taking the weighted averages of subgroup averages to find the total population average. This is usually what we want when we are doing MRP, because we are usually trying to estimate the total state average. However, averages are actually functions of the total statistic, which can also be useful in its own right. Let’s explore poststratifying the total, and see how it relates back to the weighed average.</p>
+<p>Estimating total test scores doesn’t seem very useful, but estimating total enrollment could be important for policy decisions. I’ll use that as our example.</p>
 <p>Let <span class="math inline">\(X = x_1, x_2, \dots, x_{6194}\)</span> be the students enrolled at each school. Then <span class="math inline">\(T(X) = \sum_{i=1}^{6194}x_i\)</span> is the total number of students enrolled, with <span class="math inline">\(T(X) = T(X_e) + T(X_h) + T(X_m)\)</span> where <span class="math inline">\(X_e, X_h, X_m\)</span> are the enrollment data by school type.</p>
 <p>In our school survey, the total enrollment for each school type is</p>
 <pre class="r"><code>d.group.enroll &lt;- d %&gt;% 
@@ -161,14 +162,15 @@ T(X_h) &amp;= \sum_{i=1}^{755}x_{hi} \\
 \end{align}\]</span>
 <p>where <span class="math inline">\(\hat{X}_h = \hat{x}_{h1}, \hat{x}_{h2}, \dots, \hat{x}_{h50}\)</span> is the enrollment data from the highschool survey subgroup. Previously we scaled down the averages in proportion to the whole, and now we are scaling up the totals relative to the subgroup size.</p>
 <p>Calculating,</p>
-<pre class="r"><code>d.tot.enroll &lt;- d.group.enroll %&gt;%
-  summarise(total_enroll = sum(enroll * Census$pop/c(100, 50, 50)))
+<pre class="r"><code>group_sizes &lt;- c(100, 50, 50)
+d.tot.enroll &lt;- d.group.enroll %&gt;%
+  summarise(total_enroll = sum(enroll * Census$pop/group_sizes))
 d.tot.enroll</code></pre>
 <pre><code>## # A tibble: 1 x 1
 ##   total_enroll
 ##          &lt;dbl&gt;
 ## 1      3687178</code></pre>
-<p>This type of poststratification gives us a pretty decent total estimate.</p>
+<p>This type of poststratification gives us a decent total estimate.</p>
 <pre class="r"><code>apipop %&gt;% as.tibble() %&gt;%
   summarise(total=sum(enroll, na.rm=TRUE))</code></pre>
 <pre><code>## # A tibble: 1 x 1
@@ -176,13 +178,13 @@ d.tot.enroll</code></pre>
 ##     &lt;int&gt;
 ## 1 3811472</code></pre>
 </div>
-<div id="totals-and-weighted-averaging" class="section level3">
-<h3>Totals and Weighted Averaging</h3>
-<p>The weighted average of subgroup averages is actually a special case of this total-based poststratification method. Let’s consider average test scores again, where <span class="math inline">\(\hat{X}_e, \hat{X}_h, \hat{X}_m\)</span> is the test score data for each school type in our survey, with <span class="math inline">\(X_e, X_h, X_m\)</span> being the population score data by school type. Then by definition, the average</p>
+<div id="the-total-and-weighted-averaging" class="section level3">
+<h3>The Total and Weighted Averaging</h3>
+<p>The weighted average of subgroup averages is actually a special case of total-based poststratification. Let’s consider average test scores again, where <span class="math inline">\(\hat{X}_e, \hat{X}_h, \hat{X}_m\)</span> is the test score data for each school type in our survey, with <span class="math inline">\(X_e, X_h, X_m\)</span> being the population score data by school type. Then by definition, the average</p>
 <span class="math display">\[\begin{align}
 \bar{X} &amp;= \frac{1}{6194}\left( T(X_e) + T(X_h) + T(X_m) \right) \\
-&amp;\approx \frac{1}{6194}\left(\frac{4421}{100} T(\bar{X}_e) + \frac{755}{50} T(\bar{X}_h) + \frac{1018}{50} T(\bar{X}_m)        \right) \\
-&amp;= \frac{4421}{6194} \frac{T(\bar{X}_e)}{100} + \frac{755}{6194} \frac{T(\bar{X}_h)}{50} + \frac{1018}{6194} \frac{T(\bar{X}_m)}{50}      \\
+&amp;\approx \frac{1}{6194}\left(\frac{4421}{100} T(\hat{X}_e) + \frac{755}{50} T(\hat{X}_h) + \frac{1018}{50} T(\hat{X}_m)        \right) \\
+&amp;= \frac{4421}{6194} \frac{T(\hat{X}_e)}{100} + \frac{755}{6194} \frac{T(\hat{X}_h)}{50} + \frac{1018}{6194} \frac{T(\hat{X}_m)}{50}      \\
 &amp;\approx \frac{4421}{6194} \bar{X}_e + \frac{755}{6194} \bar{X}_h + \frac{1018}{6194} \bar{X}_m
 \end{align}\]</span>
 <p>which is the weighted average of subgroup averages found in the first section.</p>
@@ -198,7 +200,7 @@ d.api.tot</code></pre>
 ## 2      H   31291
 ## 3      M   31830</code></pre>
 <pre class="r"><code>d.api.mean &lt;- d.api.tot %&gt;%
-  summarise(api_mean = sum(tot_api * Census$pop/c(100, 50, 50))/6194)
+  summarise(api_mean = sum(tot_api * Census$pop/group_sizes)/6194)
 d.api.mean</code></pre>
 <pre><code>## # A tibble: 1 x 1
 ##   api_mean
@@ -209,6 +211,6 @@ d.api.mean</code></pre>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. And as you’ll see in the next post, we want to find these averages by regression instead of the empirical means we showed here.</p>
-<p>We also showed that poststratifying averages is a special case of poststratifying the total. With surveys we are typically interested in estimating the mean, but the total statistic gives insight to weighted average correct, and how we could apply this idea to other statistics. Moreover, finding the total can be an useful problem in its own right. There is the classic <a href="https://en.wikipedia.org/wiki/German_tank_problem">German tanks problem</a>, estimating <a href="http://www.pewresearch.org/fact-tank/2016/09/20/measuring-illegal-immigration-how-pew-research-center-counts-unauthorized-immigrants-in-the-u-s/">immigration</a>, or investigating problems <a href="http://andrewgelman.com/2010/02/02/problems_with_c_1/">with the Census</a>.</p>
+<p>In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. As you’ll see in the next post, using regression averages instead of empirical averages allows us to be even more confident in our results.</p>
+<p>We also showed that poststratifying averages is a special case of poststratifying the total. For surveys we are typically interested in estimating the mean, but the total statistic provides insight into weighted average correction, and into generalizing poststratification to other statistics. Moreover, finding the total can be an useful problem in its own right. There is the classic <a href="https://en.wikipedia.org/wiki/German_tank_problem">German tanks problem</a>, estimating <a href="http://www.pewresearch.org/fact-tank/2016/09/20/measuring-illegal-immigration-how-pew-research-center-counts-unauthorized-immigrants-in-the-u-s/">immigration</a>, or investigating problems <a href="http://andrewgelman.com/2010/02/02/problems_with_c_1/">with the Census</a>.</p>
 </div>

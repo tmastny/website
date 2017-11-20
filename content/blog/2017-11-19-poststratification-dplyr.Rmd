@@ -93,6 +93,9 @@ group_support <- poll_data %>%
   summarise(perc_support = mean(yes))
 group_support
 ```
+
+And we can use the derived formula to calculate the population mean in R. 
+
 ```{r}
 overall_support <- group_support %>%
   summarise(total_support = sum(perc_support * Census$pop/sum(Census$pop)))
@@ -160,9 +163,9 @@ which shows that our poststratification was a pretty good approximation.
 
 ### The Total Statistic
 
-So far we have been taking the weighted averages of subgroup averages to find the total population average. This is usually what we want when we are doing MRP, because regressing gives us the averages for each group. However, many statistics are actually functions of the total statistic. Let's explore poststratifying the total, and see how it relates back to the weighed average.
+So far we have been taking the weighted averages of subgroup averages to find the total population average. This is usually what we want when we are doing MRP, because we are usually trying to estimate the total state average. However, averages are actually functions of the total statistic, which can also be useful in its own right. Let's explore poststratifying the total, and see how it relates back to the weighed average.
 
-It doesn't make much sense to estimate the total test scores, but it does for enrollment. I'll use that as our example. 
+Estimating total test scores doesn't seem very useful, but estimating total enrollment could be important for policy decisions. I'll use that as our example. 
 
 Let $X = x_1, x_2, \dots, x_{6194}$ be the students enrolled at each school. Then $T(X) = \sum_{i=1}^{6194}x_i$ is the total number of students enrolled, with $T(X) = T(X_e) + T(X_h) + T(X_m)$ where $X_e, X_h, X_m$ are the enrollment data by school type. 
 
@@ -192,26 +195,27 @@ where $\hat{X}_h = \hat{x}_{h1}, \hat{x}_{h2}, \dots, \hat{x}_{h50}$ is the enro
 Calculating,
 
 ```{r}
+group_sizes <- c(100, 50, 50)
 d.tot.enroll <- d.group.enroll %>%
-  summarise(total_enroll = sum(enroll * Census$pop/c(100, 50, 50)))
+  summarise(total_enroll = sum(enroll * Census$pop/group_sizes))
 d.tot.enroll
 ```
 
-This type of poststratification gives us a pretty decent total estimate.
+This type of poststratification gives us a decent total estimate.
 
 ```{r}
 apipop %>% as.tibble() %>%
   summarise(total=sum(enroll, na.rm=TRUE))
 ```
 
-### Totals and Weighted Averaging
+### The Total and Weighted Averaging
 
-The weighted average of subgroup averages is actually a special case of this total-based poststratification method. Let's consider average test scores again, where $\hat{X}_e, \hat{X}_h, \hat{X}_m$ is the test score data for each school type in our survey, with $X_e, X_h, X_m$ being the population score data by school type. Then by definition, the average
+The weighted average of subgroup averages is actually a special case of total-based poststratification. Let's consider average test scores again, where $\hat{X}_e, \hat{X}_h, \hat{X}_m$ is the test score data for each school type in our survey, with $X_e, X_h, X_m$ being the population score data by school type. Then by definition, the average
 
 \begin{align}
 \bar{X} &= \frac{1}{6194}\left( T(X_e) + T(X_h) + T(X_m) \right) \\
-&\approx \frac{1}{6194}\left(\frac{4421}{100} T(\bar{X}_e) + \frac{755}{50} T(\bar{X}_h) + \frac{1018}{50} T(\bar{X}_m)        \right) \\
-&= \frac{4421}{6194} \frac{T(\bar{X}_e)}{100} + \frac{755}{6194} \frac{T(\bar{X}_h)}{50} + \frac{1018}{6194} \frac{T(\bar{X}_m)}{50}      \\
+&\approx \frac{1}{6194}\left(\frac{4421}{100} T(\hat{X}_e) + \frac{755}{50} T(\hat{X}_h) + \frac{1018}{50} T(\hat{X}_m)        \right) \\
+&= \frac{4421}{6194} \frac{T(\hat{X}_e)}{100} + \frac{755}{6194} \frac{T(\hat{X}_h)}{50} + \frac{1018}{6194} \frac{T(\hat{X}_m)}{50}      \\
 &\approx \frac{4421}{6194} \bar{X}_e + \frac{755}{6194} \bar{X}_h + \frac{1018}{6194} \bar{X}_m
 \end{align}
 
@@ -227,7 +231,7 @@ d.api.tot
 ```
 ```{r}
 d.api.mean <- d.api.tot %>%
-  summarise(api_mean = sum(tot_api * Census$pop/c(100, 50, 50))/6194)
+  summarise(api_mean = sum(tot_api * Census$pop/group_sizes)/6194)
 d.api.mean
 ```
 
@@ -235,9 +239,9 @@ which is exactly the same mean we found before.
 
 ## Conclusion
 
-In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. And as you'll see in the next post, we want to find these averages by regression instead of the empirical means we showed here.
+In general, we use poststratification to find the weighted average of subgroup averages to find estimate the population average. As you'll see in the next post, using regression averages instead of empirical averages allows us to be even more confident in our results.
 
-We also showed that poststratifying averages is a special case of poststratifying the total. With surveys we are typically interested in estimating the mean, but the total statistic gives insight to weighted average correct, and how we could apply this idea to other statistics. Moreover, finding the total can be an useful problem in its own right. There is the classic [German tanks problem](https://en.wikipedia.org/wiki/German_tank_problem), estimating [immigration](http://www.pewresearch.org/fact-tank/2016/09/20/measuring-illegal-immigration-how-pew-research-center-counts-unauthorized-immigrants-in-the-u-s/), or investigating problems [with the Census](http://andrewgelman.com/2010/02/02/problems_with_c_1/). 
+We also showed that poststratifying averages is a special case of poststratifying the total. For surveys we are typically interested in estimating the mean, but the total statistic provides insight into weighted average correction, and into generalizing poststratification to other statistics. Moreover, finding the total can be an useful problem in its own right. There is the classic [German tanks problem](https://en.wikipedia.org/wiki/German_tank_problem), estimating [immigration](http://www.pewresearch.org/fact-tank/2016/09/20/measuring-illegal-immigration-how-pew-research-center-counts-unauthorized-immigrants-in-the-u-s/), or investigating problems [with the Census](http://andrewgelman.com/2010/02/02/problems_with_c_1/). 
 
 
 
