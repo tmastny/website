@@ -15,7 +15,8 @@ meta_img: /images/image.jpg
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>This blog will lead into the next post on Multilevel Regression and Poststratification, <a href="http://andrewgelman.com/2013/10/09/mister-p-whats-its-secret-sauce/">or MRP</a>. Before that I’d like to go over some basics of poststratification and weighted averages.</p>
+<p>This post will introduce poststartification: the process of correcting non-representative samples to better reflect the actual population proportions. There are some excellent sources to learn about multilevel regression and poststratification (<a href="http://andrewgelman.com/2013/10/09/mister-p-whats-its-secret-sauce/">MRP or Mister P</a>), but most are heavy on multilevel regression and light on poststratification.</p>
+<p>My next blog post will dive into the <a href="http://www.princeton.edu/~jkastell/MRP_primer/mrp_primer.pdf">MRP Primer by Jonathan Kastellec</a> using tools such as <a href="http://mc-stan.org/">Stan</a>, <a href="https://github.com/paul-buerkner/brms">brms</a>, and <a href="https://github.com/mjskay/tidybayes">tidybayes</a>. In the meantime, consider this the “MRP Primer” Primer, where I investigate poststratification with some math and examples.</p>
 <p>First, let’s imagine we have the following data.</p>
 <pre class="r"><code>vote_yes &lt;- c(rep(0, 25*(1-0.76)), 
               rep(1, 25*0.76),
@@ -25,14 +26,14 @@ vote_yes</code></pre>
 <pre><code>##  [1] 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0
 ## [36] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1
 ## [71] 1 1 1 1 1</code></pre>
-<p>Suppose this data is a list of yes or no responses to a public policy poll. Based on this sample of the population, we can gauge whether there is a majority of support for an issue by taking the average. Let <span class="math inline">\(X = x_1, x_2, \dots, x_{75}\)</span> denote this data set. Then</p>
+<p>Suppose this data is a list of yes or no responses to a public policy poll. If this is the total population of a small town, we can determine if there is a majority of support for the issue finding the mean. Let <span class="math inline">\(X = x_1, x_2, \dots, x_{75}\)</span> denote this data set. Then</p>
 <pre class="r"><code>mean(vote_yes)</code></pre>
 <pre><code>## [1] 0.4533333</code></pre>
 <p>equals</p>
 <span class="math display">\[\begin{align}
 \bar{X} &amp;= \frac{1}{75}\sum_{i=1}^{75}x_i
 \end{align}\]</span>
-<p>It is rare though that we the have results from the full population. Due to varying rates of non-response to surveys, at best we might be able to assume we have a random sample for each demographic group within the population. This could mean that the size of the groups may not be in proportion to the the whole population. For example, suppose this is another survey on the same population, over demographics <code>A</code> and <code>B</code>:</p>
+<p>It is rare though that we the have results from the full population. Due to varying rates of non-response to surveys, at best we might be able to assume we have a random sample for each demographic group within the population. This implies that the size of the groups may not be in proportion to the the whole population. For example, suppose this is another survey on the same population, over demographics <code>A</code> and <code>B</code>:</p>
 <pre class="r"><code>library(tidyverse)
 poll_data &lt;- tibble(
   group = c(rep(&quot;A&quot;, 25), rep(&quot;B&quot;, 10)),
@@ -50,8 +51,14 @@ poll_data %&gt;%
 <pre class="r"><code>Census &lt;- tibble(
   group = c(&quot;A&quot;, &quot;B&quot;),
   pop = c(25, 50)
-)</code></pre>
-<p>We see this directly by comparing the mean</p>
+)
+Census</code></pre>
+<pre><code>## # A tibble: 2 x 2
+##   group   pop
+##   &lt;chr&gt; &lt;dbl&gt;
+## 1     A    25
+## 2     B    50</code></pre>
+<p>The impact of this is evident when comparing the survey mean</p>
 <pre class="r"><code>mean(poll_data$yes)</code></pre>
 <pre><code>## [1] 0.6285714</code></pre>
 <p>to the overall population mean shown above.</p>

@@ -19,7 +19,9 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 ## Introduction
 
-This blog will lead into the next post on Multilevel Regression and Poststratification, [or MRP](http://andrewgelman.com/2013/10/09/mister-p-whats-its-secret-sauce/). Before that I'd like to go over some basics of poststratification and weighted averages. 
+This post will introduce poststartification: the process of correcting non-representative samples to better reflect the actual population proportions. There are some excellent sources to learn about multilevel regression and poststratification ([MRP or Mister P](http://andrewgelman.com/2013/10/09/mister-p-whats-its-secret-sauce/)), but most are heavy on multilevel regression and light on poststratification. 
+
+My next blog post will dive into the [MRP Primer by Jonathan Kastellec](http://www.princeton.edu/~jkastell/MRP_primer/mrp_primer.pdf) using tools such as [Stan](http://mc-stan.org/), [brms](https://github.com/paul-buerkner/brms), and [tidybayes](https://github.com/mjskay/tidybayes). In the meantime, consider this the "MRP Primer" Primer, where I investigate poststratification with some math and examples. 
 
 First, let's imagine we have the following data. 
 
@@ -31,7 +33,7 @@ vote_yes <- c(rep(0, 25*(1-0.76)),
 vote_yes
 ```
 
-Suppose this data is a list of yes or no responses to a public policy poll. Based on this sample of the population, we can gauge whether there is a majority of support for an issue by taking the average. Let $X = x_1, x_2, \dots, x_{75}$ denote this data set. Then
+Suppose this data is a list of yes or no responses to a public policy poll. If this is the total population of a small town, we can determine if there is a majority of support for the issue finding the mean. Let $X = x_1, x_2, \dots, x_{75}$ denote this data set. Then
 
 ```{r}
 mean(vote_yes)
@@ -43,7 +45,7 @@ equals
 \bar{X} &= \frac{1}{75}\sum_{i=1}^{75}x_i
 \end{align}
 
-It is rare though that we the have results from the full population. Due to varying rates of non-response to surveys, at best we might be able to assume we have a random sample for each demographic group within the population. This could mean that the size of the groups may not be in proportion to the the whole population. For example, suppose this is another survey on the same population, over demographics `A` and `B`:
+It is rare though that we the have results from the full population. Due to varying rates of non-response to surveys, at best we might be able to assume we have a random sample for each demographic group within the population. This implies that the size of the groups may not be in proportion to the the whole population. For example, suppose this is another survey on the same population, over demographics `A` and `B`:
 
 ```{r}
 library(tidyverse)
@@ -63,9 +65,10 @@ Census <- tibble(
   group = c("A", "B"),
   pop = c(25, 50)
 )
+Census
 ```
 
-We see this directly by comparing the mean
+The impact of this is evident when comparing the survey mean
 
 ```{r}
 mean(poll_data$yes)
