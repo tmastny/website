@@ -7,7 +7,7 @@ languageCode = "en-US"
 layoutdir = "layouts"
 publishdir = "public"
 author = "Tim Mastny"
-title = "Tim Mstny"
+title = "Tim Mastny"
 disqusshortname = "https-timmastny-netlify-com"
 pluralizelisttitles = false
 
