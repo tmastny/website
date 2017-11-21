@@ -7,6 +7,7 @@ categories: []
 tags: []
 description: Multilevel Regression and Poststratification with Stan
 meta_img: /images/image.jpg
+draft: true
 ---
 
 
@@ -18,9 +19,6 @@ meta_img: /images/image.jpg
 <p>Second, I’d like to tidy the workflow, especially using model tidying tools such as <code>broom</code> and <a href="https://github.com/mjskay/tidybayes"><code>tidybayes</code></a>.</p>
 <p>Lastly, I want to work through some <code>R</code> mapping examples, using <code>albersusa</code> to visualize some of the results.</p>
 <p>Austin Rochford has a similar treatment using <a href="https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477">PyMC3</a> that I recommend you check out for an alternative perspective.</p>
-</div>
-<div id="disaggragation" class="section level2">
-<h2>Disaggragation</h2>
 <p>If our goal is to estimate state-level opinion, a simple way is to combine results from many different surveys and calculate the observed mean.</p>
 <pre class="r"><code>library(tidyverse)
 library(lme4)

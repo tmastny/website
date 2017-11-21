@@ -44,12 +44,12 @@ options(mc.cores=parallel::detectCores())
 ## The Data
 
 ```{r}
-marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
-                                   convert.underscore=TRUE)
-Statelevel <- foreign::read.dta("state_level_update.dta",
-                                convert.underscore = TRUE)
-Census <- foreign::read.dta("poststratification 2000.dta",
-                            convert.underscore = TRUE)
+# marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
+#                                    convert.underscore=TRUE)
+# Statelevel <- foreign::read.dta("state_level_update.dta",
+#                                 convert.underscore = TRUE)
+# Census <- foreign::read.dta("poststratification 2000.dta",
+#                             convert.underscore = TRUE)
 ```
 ```{r}
 # Statelevel <- Statelevel[order(Statelevel$sstate.initnum),]
