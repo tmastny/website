@@ -9,6 +9,7 @@ publishdir = "public"
 author = "Tim Mastny"
 title = "Tim Mastny"
 disqusshortname = "https-timmastny-netlify-com"
+googleAnalytics = "UA-110017486-1"
 pluralizelisttitles = false
 
 [permalinks]
