@@ -18,7 +18,6 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 ## Introduction
 
-
 Jonathan Kastellec has an excellent tutorial [at his website](http://www.princeton.edu/~jkastell/mrp_primer.html) using Multilevel Regression and Poststratification (MRP) using `r-base` tools and the `arm` package. I'd like to explore Jonathan's example using some new tools. First, I'd like to explore the limitations of his approximate multilevel model with `glmer`, comparing it to a `Stan` model, which explores the whole posterior using the `brms` package. 
 
 Next, I want to compare the poststratified bayesian model to the disaggragated model.
@@ -28,9 +27,6 @@ Second, I'd like to tidy the workflow, especially using model tidying tools such
 Lastly, I want to work through some `R` mapping examples, using `albersusa` to visualize some of the results.
 
 Austin Rochford has a similar treatment using [PyMC3](https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477) that I recommend you check out for an alternative perspective. 
-
-
-## Disaggragation
 
 If our goal is to estimate state-level opinion, a simple way is to combine results from many different surveys and calculate the observed mean. 
 
@@ -48,12 +44,12 @@ options(mc.cores=parallel::detectCores())
 ## The Data
 
 ```{r}
-# marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
-#                                    convert.underscore=TRUE)
-# Statelevel <- foreign::read.dta("state_level_update.dta",
-#                                 convert.underscore = TRUE)
-# Census <- foreign::read.dta("poststratification 2000.dta",
-#                             convert.underscore = TRUE)
+marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
+                                   convert.underscore=TRUE)
+Statelevel <- foreign::read.dta("state_level_update.dta",
+                                convert.underscore = TRUE)
+Census <- foreign::read.dta("poststratification 2000.dta",
+                            convert.underscore = TRUE)
 ```
 ```{r}
 # Statelevel <- Statelevel[order(Statelevel$sstate.initnum),]
