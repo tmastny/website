@@ -1,5 +1,5 @@
 ---
-title: MRP Using Stan, brms, and tidybayes
+title: MRP Using brms and tidybayes
 author: ~
 date: '2017-11-20'
 slug: multilevel-mrp-tidybayes-brms-stan
@@ -8,6 +8,9 @@ tags: []
 description: Multilevel Regression and Poststratification with Stan
 meta_img: /images/image.jpg
 draft: true
+output:
+  blogdown::html_page:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -18,7 +21,17 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 ## Introduction
 
-Jonathan Kastellec has an excellent tutorial [at his website](http://www.princeton.edu/~jkastell/mrp_primer.html) using Multilevel Regression and Poststratification (MRP) using `r-base` tools and the `arm` package. I'd like to explore Jonathan's example using some new tools. First, I'd like to explore the limitations of his approximate multilevel model with `glmer`, comparing it to a `Stan` model, which explores the whole posterior using the `brms` package. 
+In the last post I wrote the ["MRP Primer" Primer](https://timmastny.netlify.com/blog/poststratification-with-dplyr/) studying the *p* part of MRP: poststratification. This post explores the actual [MRP Primer by Jonathan Kastellec](http://www.princeton.edu/~jkastell/mrp_primer.html). Jonathan and his coauthors wrote this excellent tutorial on Multilevel Regression and Poststratification (MRP) using `r-base` and `arm`/`lme4`.
+
+Inspired by Austin Rochford's full Bayesian implementation of the MRP Primer using [PyMC3](https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477), I decided to approach the problem using R and [Stan](http://mc-stan.org/). In particular, I wanted to highlight two packages:
+
+- [`brms`](https://github.com/paul-buerkner/brms), which provides a `lme4` like interface to Stan. And
+
+- [`tidybayes`](https://github.com/mjskay/tidybayes), which is a general tool for tidying Bayesian package outputs.
+
+Additionally, I'd like to compare the empirical mean disaggragated model, the maximum likelihood estimated multilevel model, the full Bayesian model. 
+
+I'd like to explore Jonathan's example using some new tools. First, I'd like to explore the limitations of his approximate multilevel model with `glmer`, comparing it to a `Stan` model, which explores the whole posterior using the `brms` package. 
 
 Next, I want to compare the poststratified bayesian model to the disaggragated model.
 
@@ -26,7 +39,7 @@ Second, I'd like to tidy the workflow, especially using model tidying tools such
 
 Lastly, I want to work through some `R` mapping examples, using `albersusa` to visualize some of the results.
 
-Austin Rochford has a similar treatment using [PyMC3](https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477) that I recommend you check out for an alternative perspective. 
+ has a similar treatment using  that I recommend you check out for an alternative perspective. 
 
 If our goal is to estimate state-level opinion, a simple way is to combine results from many different surveys and calculate the observed mean. 
 
@@ -51,11 +64,7 @@ options(mc.cores=parallel::detectCores())
 # Census <- foreign::read.dta("poststratification 2000.dta",
 #                             convert.underscore = TRUE)
 ```
-```{r}
-# Statelevel <- Statelevel[order(Statelevel$sstate.initnum),]
-# Census <- Census[order(Census$cstate),]
-# Census$cstate.initnum <-  match(Census$cstate, Statelevel$sstate)
-```
+
 
 
 The first issue here is that survey respondants may not be in proportion to the actual population in the state. We can try to correct this with poststratification.
@@ -64,46 +73,63 @@ Second, the variance of undersampled groups is too large for an unbiased (observ
 
 Kastellec does a lot of variable recoding and in some ways I'm not sure the tidy way is much better, but we'll try:
 
-```{r, echo=FALSE}
-# marriage.data$race.female <- (marriage.data$female *3) + marriage.data$race.wbh
-# marriage.data$age.edu.cat <- 4 * (marriage.data$age.cat -1) + marriage.data$edu.cat
-# marriage.data$p.evang.full <- Statelevel$p.evang[marriage.data$state.initnum]
-# marriage.data$p.mormon.full <-Statelevel$p.mormon[marriage.data$state.initnum]
-# marriage.data$p.relig.full <- marriage.data$p.evang.full + marriage.data$p.mormon.full
-# marriage.data$p.kerry.full <- Statelevel$kerry.04[marriage.data$state.initnum]
-# 
-# Census$crace.female <- (Census$cfemale *3) + Census$crace.WBH 
-# Census$cage.edu.cat <- 4 * (Census$cage.cat -1) + Census$cedu.cat 
-# Census$cp.evang.full<-  Statelevel$p.evang[Census$cstate.initnum]
-# Census$cp.mormon.full <- Statelevel$p.mormon[Census$cstate.initnum]
-# Census$cp.relig.full <- Census$cp.evang.full + Census$cp.mormon.full
-# Census$cp.kerry.full <-  Statelevel$kerry.04[Census$cstate.initnum]
+### Cleaning and coding
+
+```{r}
+Statelevel <- Statelevel[order(Statelevel$sstate.initnum),]
+Census <- Census[order(Census$cstate),]
+Census$cstate.initnum <-  match(Census$cstate, Statelevel$sstate)
+```
+
+```{r, echo=TRUE}
+marriage.data$race.female <- (marriage.data$female *3) + marriage.data$race.wbh
+marriage.data$age.edu.cat <- 4 * (marriage.data$age.cat -1) + marriage.data$edu.cat
+marriage.data$p.evang.full <- Statelevel$p.evang[marriage.data$state.initnum]
+marriage.data$p.mormon.full <-Statelevel$p.mormon[marriage.data$state.initnum]
+marriage.data$p.relig.full <- marriage.data$p.evang.full + marriage.data$p.mormon.full
+marriage.data$p.kerry.full <- Statelevel$kerry.04[marriage.data$state.initnum]
+
+Census$crace.female <- (Census$cfemale *3) + Census$crace.WBH
+Census$cage.edu.cat <- 4 * (Census$cage.cat -1) + Census$cedu.cat
+Census$cp.evang.full<-  Statelevel$p.evang[Census$cstate.initnum]
+Census$cp.mormon.full <- Statelevel$p.mormon[Census$cstate.initnum]
+Census$cp.relig.full <- Census$cp.evang.full + Census$cp.mormon.full
+Census$cp.kerry.full <-  Statelevel$kerry.04[Census$cstate.initnum]
 ```
 
 
 ## Model 1: Disaggragation
 
 ```{r}
-# marriage.opinion <- marriage.data %>%
-#   group_by(statename) %>%
-#   summarise(support = mean(yes.of.all))
-# marriage.opinion
+marriage.opinion <- marriage.data %>%
+  group_by(statename) %>%
+  summarise(support = mean(yes.of.all))
+marriage.opinion
 ```
 
 As an aside, I really dislike this coding scheme as it seems to make the interpretation of the categorical quantities very difficult to understand. I'd like to try an alternative reformulation of the indicators later, or have a function to convert them a la `tidybayes` to easily understand. 
 
 Next, we code the system census in the same way.
 
-## Models
+## Model 2: Maximum Likelihood Multilevel Model
 
 ```{r}
-# approx.mod <- glmer(formula = yes.of.all ~ 
-#                             (1|race.female) + (1|age.cat) +
-#                             (1|edu.cat) + (1|age.edu.cat) + 
-#                             (1|state) + (1|region) + (1|poll) +
-#                             p.relig.full + p.kerry.full, 
-#                           data=marriage.data, family=binomial(link="logit"))
-# 
+approx.mod <- glmer(formula = yes.of.all ~
+                            (1|race.female) + (1|age.cat) +
+                            (1|edu.cat) + (1|age.edu.cat) +
+                            (1|state) + (1|region) + (1|poll) +
+                            p.relig.full + p.kerry.full,
+                          data=marriage.data, family=binomial(link="logit"))
+```
+```{r}
+summary(approx.mod)
+```
+
+First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
+
+## Model 3: Full Bayesian Model
+
+```{r}
 # bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat) 
 #                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll) 
 #                  + p.relig.full + p.kerry.full, 
@@ -121,21 +147,10 @@ Next, we code the system census in the same way.
 
 
 
-## Full Bayesian
-
-Let's look at the different variance estimations for group-level effects:
-
-First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
-
-For example, parameter level standard errors require a bootstrap computation or likelihood ratio test. 
+## Model Comparisons
 
 
-
-
-However, it isn't clear how this effects our estimation of state-level responses. Let's take a look at 
-
-
-One comparison I like is what Matt Vuorre calls [with-subject scatterplots](https://mvuorre.github.io/post/2017/within-subject-scatter/). Although we are using them for a difference purpose here, the basic idea is really neat. Austin Rochford also uses a similar chart, but instead of dots I am going to plot the convenient two letter state abbreviation. 
+One comparison I like is what Matt Vuorre calls [with-subject scatterplots](https://mvuorre.github.io/post/2017/within-subject-scatter/). Although we are using them for a difference purpose here, the basic idea is really neat. Austin Rochford also uses a similar chart, but instead of dots I am going to plot the [two letter](http://andrewgelman.com/2009/01/14/state-by-state/) [state abbreviation](http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/). 
 
 
 
