@@ -11,6 +11,7 @@ title = "Tim Mastny"
 disqusshortname = "https-timmastny-netlify-com"
 googleAnalytics = "UA-110017486-1"
 pluralizelisttitles = false
+ignoreFiles = ["\\.Rmd$", "_files$", "_cache$", "\\.dta$"]
 
 [permalinks]
 blog = "blog/:slug/"
