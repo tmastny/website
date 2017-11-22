@@ -23,9 +23,9 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 In the last post I wrote the ["MRP Primer" Primer](https://timmastny.netlify.com/blog/poststratification-with-dplyr/) studying the *p* part of MRP: poststratification. This post explores the actual [MRP Primer by Jonathan Kastellec](http://www.princeton.edu/~jkastell/mrp_primer.html). Jonathan and his coauthors wrote this excellent tutorial on Multilevel Regression and Poststratification (MRP) using `r-base` and `arm`/`lme4`.
 
-The aim of the MRP Primer is to estimate state level opinions for gay marriage based on a potentionally non-representative survey data. That requires poststratification. As was done in the last post, we are going to use external Census data to scale the average support of each demographic group in proportion to its percentage of the state population.
+The aim of the MRP Primer is to estimate state level opinions for gay marriage based on a potentially non-representative survey data. That requires poststratification. As was done in the last post, we are going to use external Census data to scale the average support of each demographic group in proportion to its percentage of the state population.
 
-Multilevel regression is how we are going to estimate the average support for each group. As we'll see in this post, and in many [examples](http://andrewgelman.com/2014/01/21/everything-need-know-bayesian-statistics-learned-eight-schools/) in the literature, multilevel models allow us to partially pool information across similar groups, as well as add regression predictor. These model estimates turn out to be much better than empirical averages. 
+Previously, we used empirical means to find the average demographic group support. Here, we'll use multilevel regression which has [well documented advantages](http://andrewgelman.com/2014/01/21/everything-need-know-bayesian-statistics-learned-eight-schools/) to compared to empirical means and traditional regression models. These multilevel models allow us to partially pool information across similar groups, providing better estimates for groups with sparse (or even non-existent) data. 
 
 Inspired by Austin Rochford's full Bayesian implementation of the MRP Primer using [PyMC3](https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477), I decided to approach the problem using R and [Stan](http://mc-stan.org/). In particular, I wanted to highlight two packages:
 
@@ -33,9 +33,7 @@ Inspired by Austin Rochford's full Bayesian implementation of the MRP Primer usi
 
 - [`tidybayes`](https://github.com/mjskay/tidybayes), which is a general tool for tidying Bayesian package outputs.
 
-Additionally, I'd like to compare the empirical mean disaggragated model, the maximum likelihood estimated multilevel model, the full Bayesian model. 
-
-Lastly, I'll be doing some graphical map comparisons with the `albersusa` package.
+Additionally, I'd like to do a three-way comparison between the empirical mean disaggregated model, the maximum likelihood estimated multilevel model, the full Bayesian model. This includes some graphical map comparisons with the `albersusa` package.
 
 Here's what we'll need to get started
 
@@ -52,7 +50,7 @@ options(mc.cores=parallel::detectCores())
 
 ## The Data
 
-Here are the three data sets we'll need. First the `marriage.data` is a compliation of gay marriage polls that we hope can give us a perspective on the support of gay marriage state by state. `Statelevel` provides some additional state information we'll use as predictors in our model, such as the proportion of religious voters. And just like [last time](https://timmastny.netlify.com/blog/poststratification-with-dplyr/), the Census data will provide our poststratification weights. 
+Here are the three data sets we'll need. First the `marriage.data` is a compilation of gay marriage polls that we hope can give us a perspective on the support of gay marriage state by state. `Statelevel` provides some additional state information we'll use as predictors in our model, such as the proportion of religious voters. And just like [last time](https://timmastny.netlify.com/blog/poststratification-with-dplyr/), the Census data will provide our poststratification weights. 
 
 ```{r}
 marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
@@ -63,24 +61,16 @@ Census <- foreign::read.dta("poststratification 2000.dta",
                             convert.underscore = TRUE)
 ```
 
-### Tidying data
+### Tidying Variables
 
-Here, I am proceeding just as Jonathan Kastellec. We want to code our demographic groups in a consistent way across our data so we can easily poststratify.
+The MRP Primer takes a very literal, `r-base` approach to recoding the demographic variables and combining data across data frames. Here, I try to [tidy](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html) the data, based on the philosophy and tools of the `tidyverse` collection of packages. Personally, I think cleaning the data in this manner is simpler and more descriptive of the tidying goals. 
 
-```{r}
-Statelevel <- Statelevel %>% arrange(sstate.initnum)
-Census <- Census %>% arrange(cstate)
-```
-
-This section is copied straight from the MRP Primer. I'm not aware of a tidy way to handle this numerical coding of demographics. Let me know in the comments if you have some suggestions. 
-
-We'll be joining the data based on the state number.
 ```{r}
 # add state level predictors to marriage.data
-Statelevel <- Statelevel %>% rename(state.initnum = sstate.initnum)
+Statelevel <- Statelevel %>% rename(state = sstate)
 
 marriage.data <- Statelevel %>%
-  select(state.initnum, p.evang, p.mormon, kerry.04) %>%
+  select(state, p.evang, p.mormon, kerry.04) %>%
   right_join(marriage.data)
 
 # Combine demographic groups
@@ -88,37 +78,39 @@ marriage.data <- marriage.data %>%
   mutate(race.female = (female * 3) + race.wbh) %>%
   mutate(age.edu.cat = (female * 3) + race.wbh) %>%
   mutate(p.relig = p.evang + p.mormon)
-
-# add predictors
-# Census$cstate.initnum <-  match(Census$cstate, Statelevel$sstate)
-# 
-# Census$crace.female <- (Census$cfemale * 3) + Census$crace.WBH
-# Census$cage.edu.cat <- 4 * (Census$cage.cat - 1) + Census$cedu.cat
-# Census$cp.relig.full <- Census$cp.evang.full + Census$cp.mormon.full
-# 
-# Census$cp.evang.full<-  Statelevel$p.evang[Census$cstate.initnum]
-# Census$cp.mormon.full <- Statelevel$p.mormon[Census$cstate.initnum]
-# 
-# Census$cp.kerry.full <-  Statelevel$kerry.04[Census$cstate.initnum]
 ```
 
-### Poststratification
+### Tidying Poststratification
 
-Now the data is broken down into the demographic groups. The next step is to find the percentage of the total state population each group is for poststratification.
+Now that the data is broken down into the demographic groups, the next step is to find the percentage of the total state population for each group so we can poststratify. We want to code the Census demographics in the same way as in the gay marriage polls so we can 
+
+```{r}
+Census <- Census %>% rename(state = cstate)
+
+Census <- Statelevel %>%
+  select(state, p.evang, p.mormon, kerry.04) %>%
+  right_join(Census)
+
+Census <- Census %>%
+  mutate(race.female = (cfemale * 3 ) + crace.WBH) %>%
+  mutate(age.edu.cat = (cage.cat - 1) + cedu.cat) %>%
+  mutate(p.relig = p.evang + p.mormon)
+```
+
 
 ## Model 1: Disaggragation
 
+The first model we'll build is the disaggregate model. This model simply calculates the averages in each state by taking the mean of responses within each state. 
 
 ```{r}
-marriage.opinion <- marriage.data %>%
-  group_by(statename) %>%
+mod.disag <- marriage.data %>%
+  group_by(state) %>%
   summarise(support = mean(yes.of.all))
-marriage.opinion
 ```
 
-As an aside, I really dislike this coding scheme as it seems to make the interpretation of the categorical quantities very difficult to understand. I'd like to try an alternative reformulation of the indicators later, or have a function to convert them a la `tidybayes` to easily understand. 
+This simplicity comes at a cost. As demonstrated in the previous post, this empirical mean is not representative of the actual state mean if the respondents within are not in proportion to each group's percentage of the total population. So let's build the poststratified disaggregated model.
 
-Next, we code the system census in the same way.
+
 
 ## Model 2: Maximum Likelihood Multilevel Model
 
@@ -127,10 +119,10 @@ approx.mod <- glmer(formula = yes.of.all ~ (1|race.female)
                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
                     + (1|state) + (1|region) + (1|poll) 
                     + p.relig + kerry.04,
-                          data=marriage.data, family=binomial(link="logit"))
+                    data=marriage.data, family=binomial(link="logit"))
 ```
 ```{r}
-summary(approx.mod)
+display(approx.mod)
 ```
 
 First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
@@ -138,21 +130,21 @@ First, note that I didn't include the standard error from the MLE method. In gen
 ## Model 3: Full Bayesian Model
 
 ```{r, results='hide'}
-bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
-                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
-                 + p.relig + kerry.04,
-                 data=marriage.data, family=bernoulli(),
-                 prior=c(set_prior("normal(0,0.2)", class='b'),
-                         set_prior("normal(0,0.2)", class='sd', group="race.female"),
-                         set_prior("normal(0,0.2)", class='sd', group="age.cat"),
-                         set_prior("normal(0,0.2)", class='sd', group="edu.cat"),
-                         set_prior("normal(0,0.2)", class='sd', group="age.edu.cat"),
-                         set_prior("normal(0,0.2)", class='sd', group="state"),
-                         set_prior("normal(0,0.2)", class='sd', group="region"),
-                         set_prior("normal(0,0.2)", class='sd', group="poll")))
+# bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
+#                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+#                  + p.relig + kerry.04,
+#                  data=marriage.data, family=bernoulli(),
+#                  prior=c(set_prior("normal(0,0.2)", class='b'),
+#                          set_prior("normal(0,0.2)", class='sd', group="race.female"),
+#                          set_prior("normal(0,0.2)", class='sd', group="age.cat"),
+#                          set_prior("normal(0,0.2)", class='sd', group="edu.cat"),
+#                          set_prior("normal(0,0.2)", class='sd', group="age.edu.cat"),
+#                          set_prior("normal(0,0.2)", class='sd', group="state"),
+#                          set_prior("normal(0,0.2)", class='sd', group="region"),
+#                          set_prior("normal(0,0.2)", class='sd', group="poll")))
 ```
 ```{r}
-summary(bayes.mod)
+# summary(bayes.mod)
 ```
 
 
