@@ -31,24 +31,16 @@ Inspired by Austin Rochford's full Bayesian implementation of the MRP Primer usi
 
 Additionally, I'd like to compare the empirical mean disaggragated model, the maximum likelihood estimated multilevel model, the full Bayesian model. 
 
-I'd like to explore Jonathan's example using some new tools. First, I'd like to explore the limitations of his approximate multilevel model with `glmer`, comparing it to a `Stan` model, which explores the whole posterior using the `brms` package. 
+Lastly, I'll be doing some graphical map comparisons with the `albersusa` package.
 
-Next, I want to compare the poststratified bayesian model to the disaggragated model.
-
-Second, I'd like to tidy the workflow, especially using model tidying tools such as `broom` and [`tidybayes`](https://github.com/mjskay/tidybayes). 
-
-Lastly, I want to work through some `R` mapping examples, using `albersusa` to visualize some of the results.
-
- has a similar treatment using  that I recommend you check out for an alternative perspective. 
-
-If our goal is to estimate state-level opinion, a simple way is to combine results from many different surveys and calculate the observed mean. 
+Here's what we'll need to get started
 
 ```{r}
 library(tidyverse)
 library(lme4)
 library(brms)
 library(rstan)
-library(httr)
+library(albersusa)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -56,45 +48,54 @@ options(mc.cores=parallel::detectCores())
 
 ## The Data
 
-```{r}
-# marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
-#                                    convert.underscore=TRUE)
-# Statelevel <- foreign::read.dta("state_level_update.dta",
-#                                 convert.underscore = TRUE)
-# Census <- foreign::read.dta("poststratification 2000.dta",
-#                             convert.underscore = TRUE)
-```
-
-
-
-The first issue here is that survey respondants may not be in proportion to the actual population in the state. We can try to correct this with poststratification.
-
-Second, the variance of undersampled groups is too large for an unbiased (observed) estimated mean to be useful. We can alleivate this by partial pooling used in multilevel regression.
-
-Kastellec does a lot of variable recoding and in some ways I'm not sure the tidy way is much better, but we'll try:
-
-### Cleaning and coding
+Here are the three data sets we'll need. First the `marriage.data` is a compliation of gay marriage polls that we hope can give us a perspective on the support of gay marriage state by state. `Statelevel` provides some additional state information we'll use as predictors in our model, such as the proportion of religious voters. And just like [last time](https://timmastny.netlify.com/blog/poststratification-with-dplyr/), the Census data will provide our poststratification weights. 
 
 ```{r}
-Statelevel <- Statelevel[order(Statelevel$sstate.initnum),]
-Census <- Census[order(Census$cstate),]
-Census$cstate.initnum <-  match(Census$cstate, Statelevel$sstate)
+marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',
+                                   convert.underscore=TRUE)
+Statelevel <- foreign::read.dta("state_level_update.dta",
+                                convert.underscore = TRUE)
+Census <- foreign::read.dta("poststratification 2000.dta",
+                            convert.underscore = TRUE)
 ```
 
-```{r, echo=TRUE}
-marriage.data$race.female <- (marriage.data$female *3) + marriage.data$race.wbh
-marriage.data$age.edu.cat <- 4 * (marriage.data$age.cat -1) + marriage.data$edu.cat
-marriage.data$p.evang.full <- Statelevel$p.evang[marriage.data$state.initnum]
-marriage.data$p.mormon.full <-Statelevel$p.mormon[marriage.data$state.initnum]
-marriage.data$p.relig.full <- marriage.data$p.evang.full + marriage.data$p.mormon.full
-marriage.data$p.kerry.full <- Statelevel$kerry.04[marriage.data$state.initnum]
+### Tidying data
 
-Census$crace.female <- (Census$cfemale *3) + Census$crace.WBH
-Census$cage.edu.cat <- 4 * (Census$cage.cat -1) + Census$cedu.cat
-Census$cp.evang.full<-  Statelevel$p.evang[Census$cstate.initnum]
-Census$cp.mormon.full <- Statelevel$p.mormon[Census$cstate.initnum]
-Census$cp.relig.full <- Census$cp.evang.full + Census$cp.mormon.full
-Census$cp.kerry.full <-  Statelevel$kerry.04[Census$cstate.initnum]
+Here, I am proceeding just as Jonathan Kastellec. We want to code our demographic groups in a consistent way across our data so we can easily poststratify.
+
+```{r}
+Statelevel <- Statelevel %>% arrange(sstate.initnum)
+Census <- Census %>% arrange(cstate)
+```
+
+This section is copied straight from the MRP Primer. I'm not aware of a tidy way to handle this numerical coding of demographics. Let me know in the comments if you have some suggestions. 
+
+We'll be joining the data based on the state number.
+```{r}
+# add state level predictors to marriage.data
+Statelevel <- Statelevel %>% rename(state.initnum = sstate.initnum)
+
+marriage.data <- Statelevel %>%
+  select(state.initnum, p.evang, p.mormon, kerry.04) %>%
+  right_join(marriage.data)
+
+# Combine demographic groups
+marriage.data <- marriage.data %>%
+  mutate(race.female = (female * 3) + race.wbh) %>%
+  mutate(age.edu.cat = (female * 3) + race.wbh) %>%
+  mutate(p.relig = p.evang + p.mormon)
+
+# add predictors
+# Census$cstate.initnum <-  match(Census$cstate, Statelevel$sstate)
+# 
+# Census$crace.female <- (Census$cfemale * 3) + Census$crace.WBH
+# Census$cage.edu.cat <- 4 * (Census$cage.cat - 1) + Census$cedu.cat
+# Census$cp.relig.full <- Census$cp.evang.full + Census$cp.mormon.full
+# 
+# Census$cp.evang.full<-  Statelevel$p.evang[Census$cstate.initnum]
+# Census$cp.mormon.full <- Statelevel$p.mormon[Census$cstate.initnum]
+# 
+# Census$cp.kerry.full <-  Statelevel$kerry.04[Census$cstate.initnum]
 ```
 
 
@@ -114,11 +115,10 @@ Next, we code the system census in the same way.
 ## Model 2: Maximum Likelihood Multilevel Model
 
 ```{r}
-approx.mod <- glmer(formula = yes.of.all ~
-                            (1|race.female) + (1|age.cat) +
-                            (1|edu.cat) + (1|age.edu.cat) +
-                            (1|state) + (1|region) + (1|poll) +
-                            p.relig.full + p.kerry.full,
+approx.mod <- glmer(formula = yes.of.all ~ (1|race.female) 
+                    + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
+                    + (1|state) + (1|region) + (1|poll) 
+                    + p.relig + kerry.04,
                           data=marriage.data, family=binomial(link="logit"))
 ```
 ```{r}
@@ -129,19 +129,19 @@ First, note that I didn't include the standard error from the MLE method. In gen
 
 ## Model 3: Full Bayesian Model
 
-```{r}
-# bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat) 
-#                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll) 
-#                  + p.relig.full + p.kerry.full, 
-#                  data=marriage.data, family=bernoulli(),
-#                  prior=c(set_prior("normal(0,1)", class='b'),
-#                          set_prior("normal(0,1)", class='sd', group="race.female"),
-#                          set_prior("normal(0,1)", class='sd', group="age.cat"),
-#                          set_prior("normal(0,1)", class='sd', group="edu.cat"),
-#                          set_prior("normal(0,1)", class='sd', group="age.edu.cat"),
-#                          set_prior("normal(0,1)", class='sd', group="state"),
-#                          set_prior("normal(0,1)", class='sd', group="region"),
-#                          set_prior("normal(0,1)", class='sd', group="poll")))
+```{r, results='hide'}
+bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
+                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+                 + p.relig + kerry.04,
+                 data=marriage.data, family=bernoulli(),
+                 prior=c(set_prior("normal(0,0.2)", class='b'),
+                         set_prior("normal(0,0.2)", class='sd', group="race.female"),
+                         set_prior("normal(0,0.2)", class='sd', group="age.cat"),
+                         set_prior("normal(0,0.2)", class='sd', group="edu.cat"),
+                         set_prior("normal(0,0.2)", class='sd', group="age.edu.cat"),
+                         set_prior("normal(0,0.2)", class='sd', group="state"),
+                         set_prior("normal(0,0.2)", class='sd', group="region"),
+                         set_prior("normal(0,0.2)", class='sd', group="poll")))
 ```
 
 
@@ -151,8 +151,6 @@ First, note that I didn't include the standard error from the MLE method. In gen
 
 
 One comparison I like is what Matt Vuorre calls [with-subject scatterplots](https://mvuorre.github.io/post/2017/within-subject-scatter/). Although we are using them for a difference purpose here, the basic idea is really neat. Austin Rochford also uses a similar chart, but instead of dots I am going to plot the [two letter](http://andrewgelman.com/2009/01/14/state-by-state/) [state abbreviation](http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/). 
-
-
 
 
 

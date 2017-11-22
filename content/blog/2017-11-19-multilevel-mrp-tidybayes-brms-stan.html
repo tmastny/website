@@ -1,24 +1,11 @@
----
-title: MRP Using brms and tidybayes
-author: ~
-date: '2017-11-20'
-slug: multilevel-mrp-tidybayes-brms-stan
-categories: []
-tags: []
-description: Multilevel Regression and Poststratification with Stan
-meta_img: /images/image.jpg
-draft: true
-output:
-  blogdown::html_page:
-    toc: true
----
-
+<!-- BLOGDOWN-HEAD -->
+<!-- /BLOGDOWN-HEAD -->
 
 <div id="TOC">
 <ul>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#the-data">The Data</a><ul>
-<li><a href="#cleaning-and-coding">Cleaning and coding</a></li>
+<li><a href="#tidying-data">Tidying data</a></li>
 </ul></li>
 <li><a href="#model-1-disaggragation">Model 1: Disaggragation</a></li>
 <li><a href="#model-2-maximum-likelihood-multilevel-model">Model 2: Maximum Likelihood Multilevel Model</a></li>
@@ -36,58 +23,57 @@ output:
 <li><p><a href="https://github.com/mjskay/tidybayes"><code>tidybayes</code></a>, which is a general tool for tidying Bayesian package outputs.</p></li>
 </ul>
 <p>Additionally, I’d like to compare the empirical mean disaggragated model, the maximum likelihood estimated multilevel model, the full Bayesian model.</p>
-<p>I’d like to explore Jonathan’s example using some new tools. First, I’d like to explore the limitations of his approximate multilevel model with <code>glmer</code>, comparing it to a <code>Stan</code> model, which explores the whole posterior using the <code>brms</code> package.</p>
-<p>Next, I want to compare the poststratified bayesian model to the disaggragated model.</p>
-<p>Second, I’d like to tidy the workflow, especially using model tidying tools such as <code>broom</code> and <a href="https://github.com/mjskay/tidybayes"><code>tidybayes</code></a>.</p>
-<p>Lastly, I want to work through some <code>R</code> mapping examples, using <code>albersusa</code> to visualize some of the results.</p>
-
-<p>Austin Rochford has a similar treatment using <a href="https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477">PyMC3</a> that I recommend you check out for an alternative perspective.</p>
-||||||| merged common ancestors
-<p>Austin Rochford has a similar treatment using <a href="https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477">PyMC3</a> that I recommend you check out for an alternative perspective.</p>
-</div>
-<div id="disaggragation" class="section level2">
-<h2>Disaggragation</h2>
-=======
-<p>has a similar treatment using that I recommend you check out for an alternative perspective.</p>
-<p>If our goal is to estimate state-level opinion, a simple way is to combine results from many different surveys and calculate the observed mean.</p>
+<p>Lastly, I’ll be doing some graphical map comparisons with the <code>albersusa</code> package.</p>
+<p>Here’s what we’ll need to get started</p>
 <pre class="r"><code>library(tidyverse)
 library(lme4)
 library(brms)
 library(rstan)
-library(httr)
+library(albersusa)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())</code></pre>
 </div>
 <div id="the-data" class="section level2">
 <h2>The Data</h2>
+<p>Here are the three data sets we’ll need. First the <code>marriage.data</code> is a compliation of gay marriage polls that we hope can give us a perspective on the support of gay marriage state by state. <code>Statelevel</code> provides some additional state information we’ll use as predictors in our model, such as the proportion of religious voters. And just like <a href="https://timmastny.netlify.com/blog/poststratification-with-dplyr/">last time</a>, the Census data will provide our poststratification weights.</p>
 <pre class="r"><code>marriage.data &lt;- foreign::read.dta(&#39;gay_marriage_megapoll.dta&#39;,
                                    convert.underscore=TRUE)
 Statelevel &lt;- foreign::read.dta(&quot;state_level_update.dta&quot;,
                                 convert.underscore = TRUE)
 Census &lt;- foreign::read.dta(&quot;poststratification 2000.dta&quot;,
                             convert.underscore = TRUE)</code></pre>
-<p>The first issue here is that survey respondants may not be in proportion to the actual population in the state. We can try to correct this with poststratification.</p>
-<p>Second, the variance of undersampled groups is too large for an unbiased (observed) estimated mean to be useful. We can alleivate this by partial pooling used in multilevel regression.</p>
-<p>Kastellec does a lot of variable recoding and in some ways I’m not sure the tidy way is much better, but we’ll try:</p>
-<div id="cleaning-and-coding" class="section level3">
-<h3>Cleaning and coding</h3>
-<pre class="r"><code>Statelevel &lt;- Statelevel[order(Statelevel$sstate.initnum),]
-Census &lt;- Census[order(Census$cstate),]
-Census$cstate.initnum &lt;-  match(Census$cstate, Statelevel$sstate)</code></pre>
-<pre class="r"><code>marriage.data$race.female &lt;- (marriage.data$female *3) + marriage.data$race.wbh
-marriage.data$age.edu.cat &lt;- 4 * (marriage.data$age.cat -1) + marriage.data$edu.cat
-marriage.data$p.evang.full &lt;- Statelevel$p.evang[marriage.data$state.initnum]
-marriage.data$p.mormon.full &lt;-Statelevel$p.mormon[marriage.data$state.initnum]
-marriage.data$p.relig.full &lt;- marriage.data$p.evang.full + marriage.data$p.mormon.full
-marriage.data$p.kerry.full &lt;- Statelevel$kerry.04[marriage.data$state.initnum]
+<div id="tidying-data" class="section level3">
+<h3>Tidying data</h3>
+<p>Here, I am proceeding just as Jonathan Kastellec. We want to code our demographic groups in a consistent way across our data so we can easily poststratify.</p>
+<pre class="r"><code>Statelevel &lt;- Statelevel %&gt;% arrange(sstate.initnum)
+Census &lt;- Census %&gt;% arrange(cstate)</code></pre>
+<p>This section is copied straight from the MRP Primer. I’m not aware of a tidy way to handle this numerical coding of demographics. Let me know in the comments if you have some suggestions.</p>
+<p>We’ll be joining the data based on the state number.</p>
+<pre class="r"><code># add state level predictors to marriage.data
+Statelevel &lt;- Statelevel %&gt;% rename(state.initnum = sstate.initnum)
 
-Census$crace.female &lt;- (Census$cfemale *3) + Census$crace.WBH
-Census$cage.edu.cat &lt;- 4 * (Census$cage.cat -1) + Census$cedu.cat
-Census$cp.evang.full&lt;-  Statelevel$p.evang[Census$cstate.initnum]
-Census$cp.mormon.full &lt;- Statelevel$p.mormon[Census$cstate.initnum]
-Census$cp.relig.full &lt;- Census$cp.evang.full + Census$cp.mormon.full
-Census$cp.kerry.full &lt;-  Statelevel$kerry.04[Census$cstate.initnum]</code></pre>
+marriage.data &lt;- Statelevel %&gt;%
+  select(state.initnum, p.evang, p.mormon, kerry.04) %&gt;%
+  right_join(marriage.data)
+
+# Combine demographic groups
+marriage.data &lt;- marriage.data %&gt;%
+  mutate(race.female = (female * 3) + race.wbh) %&gt;%
+  mutate(age.edu.cat = (female * 3) + race.wbh) %&gt;%
+  mutate(p.relig = p.evang + p.mormon)
+
+# add predictors
+# Census$cstate.initnum &lt;-  match(Census$cstate, Statelevel$sstate)
+# 
+# Census$crace.female &lt;- (Census$cfemale * 3) + Census$crace.WBH
+# Census$cage.edu.cat &lt;- 4 * (Census$cage.cat - 1) + Census$cedu.cat
+# Census$cp.relig.full &lt;- Census$cp.evang.full + Census$cp.mormon.full
+# 
+# Census$cp.evang.full&lt;-  Statelevel$p.evang[Census$cstate.initnum]
+# Census$cp.mormon.full &lt;- Statelevel$p.mormon[Census$cstate.initnum]
+# 
+# Census$cp.kerry.full &lt;-  Statelevel$kerry.04[Census$cstate.initnum]</code></pre>
 </div>
 </div>
 <div id="model-1-disaggragation" class="section level2">
@@ -115,11 +101,10 @@ marriage.opinion</code></pre>
 </div>
 <div id="model-2-maximum-likelihood-multilevel-model" class="section level2">
 <h2>Model 2: Maximum Likelihood Multilevel Model</h2>
-<pre class="r"><code>approx.mod &lt;- glmer(formula = yes.of.all ~
-                            (1|race.female) + (1|age.cat) +
-                            (1|edu.cat) + (1|age.edu.cat) +
-                            (1|state) + (1|region) + (1|poll) +
-                            p.relig.full + p.kerry.full,
+<pre class="r"><code>approx.mod &lt;- glmer(formula = yes.of.all ~ (1|race.female) 
+                    + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
+                    + (1|state) + (1|region) + (1|poll) 
+                    + p.relig + kerry.04,
                           data=marriage.data, family=binomial(link=&quot;logit&quot;))</code></pre>
 <pre class="r"><code>summary(approx.mod)</code></pre>
 <pre><code>## Generalized linear mixed model fit by maximum likelihood (Laplace
@@ -127,58 +112,159 @@ marriage.opinion</code></pre>
 ##  Family: binomial  ( logit )
 ## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) +  
 ##     (1 | age.edu.cat) + (1 | state) + (1 | region) + (1 | poll) +  
-##     p.relig.full + p.kerry.full
+##     p.relig + kerry.04
 ##    Data: marriage.data
 ## 
 ##      AIC      BIC   logLik deviance df.resid 
-##   7459.4   7527.0  -3719.7   7439.4     6331 
+##   7460.9   7528.4  -3720.4   7440.9     6331 
 ## 
 ## Scaled residuals: 
-##    Min     1Q Median     3Q    Max 
-## -2.166 -0.705 -0.477  0.981  3.884 
+##     Min      1Q  Median      3Q     Max 
+## -2.2154 -0.7035 -0.4786  0.9909  3.8167 
 ## 
 ## Random effects:
 ##  Groups      Name        Variance Std.Dev.
-##  state       (Intercept) 0.001332 0.03649 
-##  age.edu.cat (Intercept) 0.007712 0.08782 
-##  race.female (Intercept) 0.054566 0.23359 
-##  poll        (Intercept) 0.042177 0.20537 
-##  region      (Intercept) 0.038087 0.19516 
-##  edu.cat     (Intercept) 0.129591 0.35999 
-##  age.cat     (Intercept) 0.306982 0.55406 
+##  state       (Intercept) 0.001607 0.04009 
+##  age.edu.cat (Intercept) 0.033869 0.18403 
+##  race.female (Intercept) 0.020344 0.14263 
+##  poll        (Intercept) 0.042019 0.20499 
+##  region      (Intercept) 0.038809 0.19700 
+##  edu.cat     (Intercept) 0.131696 0.36290 
+##  age.cat     (Intercept) 0.305043 0.55231 
 ## Number of obs: 6341, groups:  
-## state, 49; age.edu.cat, 16; race.female, 6; poll, 5; region, 5; edu.cat, 4; age.cat, 4
+## state, 49; age.edu.cat, 6; race.female, 6; poll, 5; region, 5; edu.cat, 4; age.cat, 4
 ## 
 ## Fixed effects:
-##               Estimate Std. Error z value Pr(&gt;|z|)   
-## (Intercept)  -1.406573   0.541074  -2.600  0.00933 **
-## p.relig.full -0.015250   0.004990  -3.056  0.00224 **
-## p.kerry.full  0.018258   0.006922   2.638  0.00835 **
+##              Estimate Std. Error z value Pr(&gt;|z|)   
+## (Intercept) -1.397288   0.541549  -2.580  0.00988 **
+## p.relig     -0.015162   0.005003  -3.031  0.00244 **
+## kerry.04     0.018107   0.006943   2.608  0.00911 **
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
-##             (Intr) p.rlg.
-## p.relig.fll -0.543       
-## p.kerry.fll -0.716  0.653
+##          (Intr) p.relg
+## p.relig  -0.544       
+## kerry.04 -0.718  0.653
 ## convergence code: 0
-## Model failed to converge with max|grad| = 0.00102765 (tol = 0.001, component 1)</code></pre>
+## Model failed to converge with max|grad| = 0.00105747 (tol = 0.001, component 1)
+## Model is nearly unidentifiable: large eigenvalue ratio
+##  - Rescale variables?</code></pre>
 <p>First, note that I didn’t include the standard error from the MLE method. In general, this is <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">hard to do</a>, but we get the percentile intervals for free with using <code>brms</code>.</p>
 </div>
 <div id="model-3-full-bayesian-model" class="section level2">
 <h2>Model 3: Full Bayesian Model</h2>
-<pre class="r"><code># bayes.mod &lt;- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat) 
-#                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll) 
-#                  + p.relig.full + p.kerry.full, 
-#                  data=marriage.data, family=bernoulli(),
-#                  prior=c(set_prior(&quot;normal(0,1)&quot;, class=&#39;b&#39;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;race.female&quot;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;age.cat&quot;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
-#                          set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
+<pre class="r"><code>bayes.mod &lt;- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
+                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+                 + p.relig + kerry.04,
+                 data=marriage.data, family=bernoulli(),
+                 prior=c(set_prior(&quot;normal(0,1)&quot;, class=&#39;b&#39;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;race.female&quot;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;age.cat&quot;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
+                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
+<pre><code>## 
+## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 1).
+## 
+## Gradient evaluation took 0.015625 seconds
+## 1000 transitions using 10 leapfrog steps per transition would take 156.25 seconds.
+## Adjust your expectations accordingly!
+## 
+## 
+## Iteration:    1 / 2000 [  0%]  (Warmup)
+## Iteration:  200 / 2000 [ 10%]  (Warmup)
+## Iteration:  400 / 2000 [ 20%]  (Warmup)
+## Iteration:  600 / 2000 [ 30%]  (Warmup)
+## Iteration:  800 / 2000 [ 40%]  (Warmup)
+## Iteration: 1000 / 2000 [ 50%]  (Warmup)
+## Iteration: 1001 / 2000 [ 50%]  (Sampling)
+## Iteration: 1200 / 2000 [ 60%]  (Sampling)
+## Iteration: 1400 / 2000 [ 70%]  (Sampling)
+## Iteration: 1600 / 2000 [ 80%]  (Sampling)
+## Iteration: 1800 / 2000 [ 90%]  (Sampling)
+## Iteration: 2000 / 2000 [100%]  (Sampling)
+## 
+##  Elapsed Time: 424.734 seconds (Warm-up)
+##                278.062 seconds (Sampling)
+##                702.797 seconds (Total)
+## 
+## 
+## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 2).
+## 
+## Gradient evaluation took 0.015625 seconds
+## 1000 transitions using 10 leapfrog steps per transition would take 156.25 seconds.
+## Adjust your expectations accordingly!
+## 
+## 
+## Iteration:    1 / 2000 [  0%]  (Warmup)
+## Iteration:  200 / 2000 [ 10%]  (Warmup)
+## Iteration:  400 / 2000 [ 20%]  (Warmup)
+## Iteration:  600 / 2000 [ 30%]  (Warmup)
+## Iteration:  800 / 2000 [ 40%]  (Warmup)
+## Iteration: 1000 / 2000 [ 50%]  (Warmup)
+## Iteration: 1001 / 2000 [ 50%]  (Sampling)
+## Iteration: 1200 / 2000 [ 60%]  (Sampling)
+## Iteration: 1400 / 2000 [ 70%]  (Sampling)
+## Iteration: 1600 / 2000 [ 80%]  (Sampling)
+## Iteration: 1800 / 2000 [ 90%]  (Sampling)
+## Iteration: 2000 / 2000 [100%]  (Sampling)
+## 
+##  Elapsed Time: 417.375 seconds (Warm-up)
+##                277.891 seconds (Sampling)
+##                695.266 seconds (Total)
+## 
+## 
+## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 3).
+## 
+## Gradient evaluation took 0.015625 seconds
+## 1000 transitions using 10 leapfrog steps per transition would take 156.25 seconds.
+## Adjust your expectations accordingly!
+## 
+## 
+## Iteration:    1 / 2000 [  0%]  (Warmup)
+## Iteration:  200 / 2000 [ 10%]  (Warmup)
+## Iteration:  400 / 2000 [ 20%]  (Warmup)
+## Iteration:  600 / 2000 [ 30%]  (Warmup)
+## Iteration:  800 / 2000 [ 40%]  (Warmup)
+## Iteration: 1000 / 2000 [ 50%]  (Warmup)
+## Iteration: 1001 / 2000 [ 50%]  (Sampling)
+## Iteration: 1200 / 2000 [ 60%]  (Sampling)
+## Iteration: 1400 / 2000 [ 70%]  (Sampling)
+## Iteration: 1600 / 2000 [ 80%]  (Sampling)
+## Iteration: 1800 / 2000 [ 90%]  (Sampling)
+## Iteration: 2000 / 2000 [100%]  (Sampling)
+## 
+##  Elapsed Time: 433.875 seconds (Warm-up)
+##                279 seconds (Sampling)
+##                712.875 seconds (Total)
+## 
+## 
+## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 4).
+## 
+## Gradient evaluation took 0 seconds
+## 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
+## Adjust your expectations accordingly!
+## 
+## 
+## Iteration:    1 / 2000 [  0%]  (Warmup)
+## Iteration:  200 / 2000 [ 10%]  (Warmup)
+## Iteration:  400 / 2000 [ 20%]  (Warmup)
+## Iteration:  600 / 2000 [ 30%]  (Warmup)
+## Iteration:  800 / 2000 [ 40%]  (Warmup)
+## Iteration: 1000 / 2000 [ 50%]  (Warmup)
+## Iteration: 1001 / 2000 [ 50%]  (Sampling)
+## Iteration: 1200 / 2000 [ 60%]  (Sampling)
+## Iteration: 1400 / 2000 [ 70%]  (Sampling)
+## Iteration: 1600 / 2000 [ 80%]  (Sampling)
+## Iteration: 1800 / 2000 [ 90%]  (Sampling)
+## Iteration: 2000 / 2000 [100%]  (Sampling)
+## 
+##  Elapsed Time: 494.203 seconds (Warm-up)
+##                302.219 seconds (Sampling)
+##                796.422 seconds (Total)</code></pre>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
