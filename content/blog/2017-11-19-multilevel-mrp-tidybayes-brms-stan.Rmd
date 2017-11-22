@@ -143,6 +143,9 @@ bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
                          set_prior("normal(0,0.2)", class='sd', group="region"),
                          set_prior("normal(0,0.2)", class='sd', group="poll")))
 ```
+```{r}
+summary(bayes.mod)
+```
 
 
 

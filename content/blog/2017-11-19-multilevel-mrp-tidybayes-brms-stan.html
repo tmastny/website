@@ -1,5 +1,18 @@
-<!-- BLOGDOWN-HEAD -->
-<!-- /BLOGDOWN-HEAD -->
+---
+title: MRP Using brms and tidybayes
+author: ~
+date: '2017-11-20'
+slug: multilevel-mrp-tidybayes-brms-stan
+categories: []
+tags: []
+description: Multilevel Regression and Poststratification with Stan
+meta_img: /images/image.jpg
+draft: true
+output:
+  blogdown::html_page:
+    toc: true
+---
+
 
 <div id="TOC">
 <ul>
@@ -158,113 +171,61 @@ marriage.opinion</code></pre>
                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
                  + p.relig + kerry.04,
                  data=marriage.data, family=bernoulli(),
-                 prior=c(set_prior(&quot;normal(0,1)&quot;, class=&#39;b&#39;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;race.female&quot;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;age.cat&quot;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
-                         set_prior(&quot;normal(0,1)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
-<pre><code>## 
-## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 1).
+                 prior=c(set_prior(&quot;normal(0,0.2)&quot;, class=&#39;b&#39;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;race.female&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.cat&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
+<pre class="r"><code>summary(bayes.mod)</code></pre>
+<pre><code>##  Family: bernoulli 
+##   Links: mu = logit 
+## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) + (1 | age.edu.cat) + (1 | state) + (1 | region) + (1 | poll) + p.relig + kerry.04 
+##    Data: marriage.data (Number of observations: 6341) 
+## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
+##          total post-warmup samples = 4000
+##     ICs: LOO = NA; WAIC = NA; R2 = NA
+##  
+## Group-Level Effects: 
+## ~age.cat (Number of levels: 4) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.42      0.09     0.27     0.63       2784 1.00
 ## 
-## Gradient evaluation took 0.015625 seconds
-## 1000 transitions using 10 leapfrog steps per transition would take 156.25 seconds.
-## Adjust your expectations accordingly!
+## ~age.edu.cat (Number of levels: 6) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.17      0.10     0.01     0.38       1430 1.00
 ## 
+## ~edu.cat (Number of levels: 4) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.32      0.09     0.18     0.52       3013 1.00
 ## 
-## Iteration:    1 / 2000 [  0%]  (Warmup)
-## Iteration:  200 / 2000 [ 10%]  (Warmup)
-## Iteration:  400 / 2000 [ 20%]  (Warmup)
-## Iteration:  600 / 2000 [ 30%]  (Warmup)
-## Iteration:  800 / 2000 [ 40%]  (Warmup)
-## Iteration: 1000 / 2000 [ 50%]  (Warmup)
-## Iteration: 1001 / 2000 [ 50%]  (Sampling)
-## Iteration: 1200 / 2000 [ 60%]  (Sampling)
-## Iteration: 1400 / 2000 [ 70%]  (Sampling)
-## Iteration: 1600 / 2000 [ 80%]  (Sampling)
-## Iteration: 1800 / 2000 [ 90%]  (Sampling)
-## Iteration: 2000 / 2000 [100%]  (Sampling)
+## ~poll (Number of levels: 5) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.22      0.07     0.11     0.41       2443 1.00
 ## 
-##  Elapsed Time: 424.734 seconds (Warm-up)
-##                278.062 seconds (Sampling)
-##                702.797 seconds (Total)
+## ~race.female (Number of levels: 6) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.17      0.10     0.01     0.38       1438 1.00
 ## 
+## ~region (Number of levels: 5) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.22      0.08     0.10     0.42       2878 1.00
 ## 
-## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 2).
+## ~state (Number of levels: 49) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.07      0.04     0.00     0.16       1399 1.00
 ## 
-## Gradient evaluation took 0.015625 seconds
-## 1000 transitions using 10 leapfrog steps per transition would take 156.25 seconds.
-## Adjust your expectations accordingly!
+## Population-Level Effects: 
+##           Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## Intercept    -1.40      0.53    -2.46    -0.38       2263 1.00
+## p.relig      -0.02      0.01    -0.03    -0.01       4000 1.00
+## kerry.04      0.02      0.01     0.00     0.03       4000 1.00
 ## 
-## 
-## Iteration:    1 / 2000 [  0%]  (Warmup)
-## Iteration:  200 / 2000 [ 10%]  (Warmup)
-## Iteration:  400 / 2000 [ 20%]  (Warmup)
-## Iteration:  600 / 2000 [ 30%]  (Warmup)
-## Iteration:  800 / 2000 [ 40%]  (Warmup)
-## Iteration: 1000 / 2000 [ 50%]  (Warmup)
-## Iteration: 1001 / 2000 [ 50%]  (Sampling)
-## Iteration: 1200 / 2000 [ 60%]  (Sampling)
-## Iteration: 1400 / 2000 [ 70%]  (Sampling)
-## Iteration: 1600 / 2000 [ 80%]  (Sampling)
-## Iteration: 1800 / 2000 [ 90%]  (Sampling)
-## Iteration: 2000 / 2000 [100%]  (Sampling)
-## 
-##  Elapsed Time: 417.375 seconds (Warm-up)
-##                277.891 seconds (Sampling)
-##                695.266 seconds (Total)
-## 
-## 
-## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 3).
-## 
-## Gradient evaluation took 0.015625 seconds
-## 1000 transitions using 10 leapfrog steps per transition would take 156.25 seconds.
-## Adjust your expectations accordingly!
-## 
-## 
-## Iteration:    1 / 2000 [  0%]  (Warmup)
-## Iteration:  200 / 2000 [ 10%]  (Warmup)
-## Iteration:  400 / 2000 [ 20%]  (Warmup)
-## Iteration:  600 / 2000 [ 30%]  (Warmup)
-## Iteration:  800 / 2000 [ 40%]  (Warmup)
-## Iteration: 1000 / 2000 [ 50%]  (Warmup)
-## Iteration: 1001 / 2000 [ 50%]  (Sampling)
-## Iteration: 1200 / 2000 [ 60%]  (Sampling)
-## Iteration: 1400 / 2000 [ 70%]  (Sampling)
-## Iteration: 1600 / 2000 [ 80%]  (Sampling)
-## Iteration: 1800 / 2000 [ 90%]  (Sampling)
-## Iteration: 2000 / 2000 [100%]  (Sampling)
-## 
-##  Elapsed Time: 433.875 seconds (Warm-up)
-##                279 seconds (Sampling)
-##                712.875 seconds (Total)
-## 
-## 
-## SAMPLING FOR MODEL &#39;bernoulli(logit) brms-model&#39; NOW (CHAIN 4).
-## 
-## Gradient evaluation took 0 seconds
-## 1000 transitions using 10 leapfrog steps per transition would take 0 seconds.
-## Adjust your expectations accordingly!
-## 
-## 
-## Iteration:    1 / 2000 [  0%]  (Warmup)
-## Iteration:  200 / 2000 [ 10%]  (Warmup)
-## Iteration:  400 / 2000 [ 20%]  (Warmup)
-## Iteration:  600 / 2000 [ 30%]  (Warmup)
-## Iteration:  800 / 2000 [ 40%]  (Warmup)
-## Iteration: 1000 / 2000 [ 50%]  (Warmup)
-## Iteration: 1001 / 2000 [ 50%]  (Sampling)
-## Iteration: 1200 / 2000 [ 60%]  (Sampling)
-## Iteration: 1400 / 2000 [ 70%]  (Sampling)
-## Iteration: 1600 / 2000 [ 80%]  (Sampling)
-## Iteration: 1800 / 2000 [ 90%]  (Sampling)
-## Iteration: 2000 / 2000 [100%]  (Sampling)
-## 
-##  Elapsed Time: 494.203 seconds (Warm-up)
-##                302.219 seconds (Sampling)
-##                796.422 seconds (Total)</code></pre>
+## Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+## is a crude measure of effective sample size, and Rhat is the potential 
+## scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
