@@ -43,6 +43,7 @@ library(lme4)
 library(brms)
 library(rstan)
 library(albersusa)
+library(cowplot)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -76,7 +77,7 @@ marriage.data <- Statelevel %>%
 # Combine demographic groups
 marriage.data <- marriage.data %>%
   mutate(race.female = (female * 3) + race.wbh) %>%
-  mutate(age.edu.cat = (female * 3) + race.wbh) %>%
+  mutate(age.edu.cat = 4 * (age.cat - 1) + edu.cat) %>%
   mutate(p.relig = p.evang + p.mormon)
 ```
 
@@ -85,7 +86,12 @@ marriage.data <- marriage.data %>%
 Now that the data is broken down into the demographic groups, the next step is to find the percentage of the total state population for each group so we can poststratify. We want to code the Census demographics in the same way as in the gay marriage polls so we can 
 
 ```{r}
-Census <- Census %>% rename(state = cstate)
+# change column names for natural join with marriage.data
+Census <- Census %>% 
+  rename(state = cstate,
+         age.cat = cage.cat,
+         edu.cat = cedu.cat,
+         region = cregion)
 
 Census <- Statelevel %>%
   select(state, p.evang, p.mormon, kerry.04) %>%
@@ -93,8 +99,15 @@ Census <- Statelevel %>%
 
 Census <- Census %>%
   mutate(race.female = (cfemale * 3 ) + crace.WBH) %>%
-  mutate(age.edu.cat = (cage.cat - 1) + cedu.cat) %>%
+  mutate(age.edu.cat = 4 * (age.cat - 1) + edu.cat) %>%
   mutate(p.relig = p.evang + p.mormon)
+```
+
+Then we can just include the Census rates as a column in the gay marriage poll data.
+
+```{r}
+# marriage.data <- Census %>%
+#   select(state, kerry.04, race.female, age.edu.cat)
 ```
 
 
@@ -105,24 +118,92 @@ The first model we'll build is the disaggregate model. This model simply calcula
 ```{r}
 mod.disag <- marriage.data %>%
   group_by(state) %>%
-  summarise(support = mean(yes.of.all))
+  summarise(support = mean(yes.of.all)) %>%
+  mutate(model = "no_ps")
 ```
 
-This simplicity comes at a cost. As demonstrated in the previous post, this empirical mean is not representative of the actual state mean if the respondents within are not in proportion to each group's percentage of the total population. So let's build the poststratified disaggregated model.
+This simplicity comes at a cost. As demonstrated in the previous post, the empirical mean is not representative of the actual state mean if the respondents within are not in proportion to each group's percentage of the total population. So let's build the poststratified disaggregated model.
 
+First we'll find the average of within each group:
+
+```{r}
+grp.means <- marriage.data %>%
+  group_by(state, poll, region, race.female, age.cat, 
+           edu.cat, age.edu.cat, p.relig, kerry.04) %>%
+  summarise(support = mean(yes.of.all, na.rm=TRUE))
+```
+
+Then we'll add in the group's percentage in each state:
+
+```{r}
+grp.means <- Census %>%
+  select(state, age.cat, edu.cat, region, kerry.04,
+         race.female, age.edu.cat, p.relig, cpercent.state) %>%
+  right_join(grp.means)
+```
+
+Then we'll sum the scaled group averages and get the total state averages:
+
+```{r}
+mod.disag.ps <- grp.means %>%
+  group_by(state) %>%
+  summarise(support = sum(support * cpercent.state, na.rm=TRUE)) %>%
+  mutate(model = "ps")
+```
+
+Here's the difference:
+
+```{r, fig.align='center', fig.width=5, fig.height=5}
+bind_rows(mod.disag, mod.disag.ps) %>%
+  arrange(support) %>%
+  filter(state != "") %>%
+  ggplot(aes(x = support, y=reorder(state, support), color=model)) + 
+  geom_point() + 
+  theme_classic() + theme(legend.position = 'none') +  
+  directlabels::geom_dl(aes(label=model), method='smart.grid') +
+  ylab('state')
+```
+
+In this case, poststratification is producing some really weird results, claiming that half a dozen states have zero support for gay marriage. Let's dive into South Dakota and see what's going on:
+
+```{r}
+bind_rows(mod.disag, mod.disag.ps) %>%
+  filter(state == 'SD')
+```
+
+```{r}
+grp.means %>%
+  filter(state == 'SD') %>%
+  select(-region, -poll, -state, -support)
+```
+We only have a state percent for 2 groups, both with zero support.
+```{r}
+Census %>%
+  filter(state == 'SD') %>%
+  select(age.cat, edu.cat, kerry.04,
+         race.female, age.edu.cat, p.relig, cpercent.state)
+```
+```{r}
+marriage.data %>%
+  filter(state == 'SD') %>%
+  select(poll, age.cat, edu.cat, kerry.04,
+         race.female, age.edu.cat, p.relig, yes.of.all)
+```
+
+The lack of data for some voter groups makes poststratifying on the state level impossible and/or meaningless. This scenario actually motivates multilevel regression. As we'll see in the next section, the multilevel model assumes similar demographic groups tend to vote the same. For example, suppose no black women were polled in South Dakota. Instead of producing skewed estimates, we can estimate the proportion of support black women have for gay marriage in South Dakota by level of support (and variation of support) black women have in all other states. 
 
 
 ## Model 2: Maximum Likelihood Multilevel Model
 
 ```{r}
-approx.mod <- glmer(formula = yes.of.all ~ (1|race.female) 
-                    + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
-                    + (1|state) + (1|region) + (1|poll) 
-                    + p.relig + kerry.04,
-                    data=marriage.data, family=binomial(link="logit"))
+# approx.mod <- glmer(formula = yes.of.all ~ (1|race.female) 
+#                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
+#                     + (1|state) + (1|region) + (1|poll) 
+#                     + p.relig + kerry.04,
+#                     data=marriage.data, family=binomial(link="logit"))
 ```
 ```{r}
-display(approx.mod)
+# summary(approx.mod)
 ```
 
 First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
