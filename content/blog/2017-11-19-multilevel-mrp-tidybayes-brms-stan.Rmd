@@ -168,7 +168,7 @@ bind_rows(mod.disag, mod.disag.ps) %>%
 
 And here's the problem:
 
-```{r, fig.align='center', fig.height=2, fig.width=2}
+```{r, fig.align='center'}
 grp.means %>%
   group_by(state) %>%
   summarise(total_percent = sum(cpercent.state, na.rm=TRUE)) %>%
