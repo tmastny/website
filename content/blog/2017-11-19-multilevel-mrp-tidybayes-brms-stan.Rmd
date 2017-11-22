@@ -128,7 +128,7 @@ First we'll find the average of within each group:
 
 ```{r}
 grp.means <- marriage.data %>%
-  group_by(state, poll, region, race.female, age.cat, 
+  group_by(state, region, race.female, age.cat, 
            edu.cat, age.edu.cat, p.relig, kerry.04) %>%
   summarise(support = mean(yes.of.all, na.rm=TRUE))
 ```
@@ -164,28 +164,30 @@ bind_rows(mod.disag, mod.disag.ps) %>%
   ylab('state')
 ```
 
+**** Note: I'm going the wrong way. I need to match each group in the Census with an average score, not just provide Census info for each average. 
+
 In this case, poststratification is producing some really weird results, claiming that half a dozen states have zero support for gay marriage. Let's dive into South Dakota and see what's going on:
 
 ```{r}
 bind_rows(mod.disag, mod.disag.ps) %>%
-  filter(state == 'SD')
+  filter(state == 'CA')
 ```
 
 ```{r}
 grp.means %>%
-  filter(state == 'SD') %>%
+  filter(state == 'CA') %>%
   select(-region, -poll, -state, -support)
 ```
 We only have a state percent for 2 groups, both with zero support.
 ```{r}
 Census %>%
-  filter(state == 'SD') %>%
+  filter(state == 'CA') %>%
   select(age.cat, edu.cat, kerry.04,
          race.female, age.edu.cat, p.relig, cpercent.state)
 ```
 ```{r}
 marriage.data %>%
-  filter(state == 'SD') %>%
+  filter(state == 'CA') %>%
   select(poll, age.cat, edu.cat, kerry.04,
          race.female, age.edu.cat, p.relig, yes.of.all)
 ```
