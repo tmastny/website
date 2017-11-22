@@ -164,35 +164,21 @@ bind_rows(mod.disag, mod.disag.ps) %>%
   ylab('state')
 ```
 
-**** Note: I'm going the wrong way. I need to match each group in the Census with an average score, not just provide Census info for each average. 
+** try ggcow subset within subject plot
 
-**** Sum each `cpercent.state` to see if you get 1 to demonstrate the impact of missing subgroups
+And here's the problem:
 
-In this case, poststratification is producing some really weird results, claiming that half a dozen states have zero support for gay marriage. Let's dive into South Dakota and see what's going on:
-
-```{r}
-bind_rows(mod.disag, mod.disag.ps) %>%
-  filter(state == 'CA')
-```
-
-```{r}
+```{r, fig.align='center', fig.height=2, fig.width=2}
 grp.means %>%
-  filter(state == 'CA') %>%
-  select(-region, -state, -support)
+  group_by(state) %>%
+  summarise(total_percent = sum(cpercent.state, na.rm=TRUE)) %>%
+  filter(state != "") %>%
+  ggplot(aes(x = state, y = total_percent)) +
+  geom_point() +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 ```
-We only have a state percent for 2 groups, both with zero support.
-```{r}
-Census %>%
-  filter(state == 'CA') %>%
-  select(age.cat, edu.cat, kerry.04,
-         race.female, age.edu.cat, p.relig, cpercent.state)
-```
-```{r}
-marriage.data %>%
-  filter(state == 'CA') %>%
-  select(poll, age.cat, edu.cat, kerry.04,
-         race.female, age.edu.cat, p.relig, yes.of.all)
-```
+
 
 The lack of data for some voter groups makes poststratifying on the state level impossible and/or meaningless. This scenario actually motivates multilevel regression. As we'll see in the next section, the multilevel model assumes similar demographic groups tend to vote the same. For example, suppose no black women were polled in South Dakota. Instead of producing skewed estimates, we can estimate the proportion of support black women have for gay marriage in South Dakota by level of support (and variation of support) black women have in all other states. 
 

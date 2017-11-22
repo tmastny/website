@@ -8,11 +8,11 @@ unnamed-chunk-7	grp.means	marriage.data	%>%	group_by	state	region	race.female	ag
 unnamed-chunk-8	grp.means	Census	%>%	select	state	age.cat	edu.cat	region	kerry.04	race.female	age.edu.cat	p.relig	cpercent.state	right_join
 unnamed-chunk-9	mod.disag.ps	grp.means	%>%	group_by	state	summarise	sum	support	cpercent.state	mutate
 unnamed-chunk-10	bind_rows	mod.disag	mod.disag.ps	%>%	arrange	support	filter	state	ggplot	aes	reorder	model	geom_point	theme_classic	theme	geom_dl	ylab
-unnamed-chunk-11	bind_rows	mod.disag	mod.disag.ps	%>%	filter	state
-unnamed-chunk-12	grp.means	%>%	filter	state	select	region	support
-unnamed-chunk-13	Census	%>%	filter	state	select	age.cat	edu.cat	kerry.04	race.female	age.edu.cat	p.relig	cpercent.state
-unnamed-chunk-14	marriage.data	%>%	filter	state	select	poll	age.cat	edu.cat	kerry.04	race.female	age.edu.cat	p.relig	yes.of.all
-unnamed-chunk-15	approx.mod	glmer	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	poll	p.relig	kerry.04	marriage.data	binomial
+unnamed-chunk-11	grp.means	%>%	group_by	state	summarise	sum	cpercent.state	filter	ggplot	aes	total_percent	geom_point	theme	element_blank
+unnamed-chunk-12	approx.mod	glmer	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	poll	p.relig	kerry.04	marriage.data	binomial
+unnamed-chunk-13	summary	approx.mod
+unnamed-chunk-14	bayes.mod	brm	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	poll	p.relig	kerry.04	marriage.data	bernoulli	c	set_prior
+unnamed-chunk-15	summary	bayes.mod
 unnamed-chunk-16	summary	approx.mod
 unnamed-chunk-17	bayes.mod	brm	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	poll	p.relig	kerry.04	marriage.data	bernoulli	c	set_prior
 unnamed-chunk-18	summary	bayes.mod
