@@ -176,7 +176,7 @@ bind_rows(mod.disag, mod.disag.ps) %>%
 ```{r}
 grp.means %>%
   filter(state == 'CA') %>%
-  select(-region, -poll, -state, -support)
+  select(-region, -state, -support)
 ```
 We only have a state percent for 2 groups, both with zero support.
 ```{r}
