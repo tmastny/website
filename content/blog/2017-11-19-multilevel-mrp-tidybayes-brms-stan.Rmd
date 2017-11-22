@@ -166,6 +166,8 @@ bind_rows(mod.disag, mod.disag.ps) %>%
 
 **** Note: I'm going the wrong way. I need to match each group in the Census with an average score, not just provide Census info for each average. 
 
+**** Sum each `cpercent.state` to see if you get 1 to demonstrate the impact of missing subgroups
+
 In this case, poststratification is producing some really weird results, claiming that half a dozen states have zero support for gay marriage. Let's dive into South Dakota and see what's going on:
 
 ```{r}
