@@ -23,6 +23,10 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 In the last post I wrote the ["MRP Primer" Primer](https://timmastny.netlify.com/blog/poststratification-with-dplyr/) studying the *p* part of MRP: poststratification. This post explores the actual [MRP Primer by Jonathan Kastellec](http://www.princeton.edu/~jkastell/mrp_primer.html). Jonathan and his coauthors wrote this excellent tutorial on Multilevel Regression and Poststratification (MRP) using `r-base` and `arm`/`lme4`.
 
+The aim of the MRP Primer is to estimate state level opinions for gay marriage based on a potentionally non-representative survey data. That requires poststratification. As was done in the last post, we are going to use external Census data to scale the average support of each demographic group in proportion to its percentage of the state population.
+
+Multilevel regression is how we are going to estimate the average support for each group. As we'll see in this post, and in many [examples](http://andrewgelman.com/2014/01/21/everything-need-know-bayesian-statistics-learned-eight-schools/) in the literature, multilevel models allow us to partially pool information across similar groups, as well as add regression predictor. These model estimates turn out to be much better than empirical averages. 
+
 Inspired by Austin Rochford's full Bayesian implementation of the MRP Primer using [PyMC3](https://gist.github.com/AustinRochford/bfc20cb3262169b41b730bd9faf74477), I decided to approach the problem using R and [Stan](http://mc-stan.org/). In particular, I wanted to highlight two packages:
 
 - [`brms`](https://github.com/paul-buerkner/brms), which provides a `lme4` like interface to Stan. And
@@ -98,8 +102,12 @@ marriage.data <- marriage.data %>%
 # Census$cp.kerry.full <-  Statelevel$kerry.04[Census$cstate.initnum]
 ```
 
+### Poststratification
+
+Now the data is broken down into the demographic groups. The next step is to find the percentage of the total state population each group is for poststratification.
 
 ## Model 1: Disaggragation
+
 
 ```{r}
 marriage.opinion <- marriage.data %>%
