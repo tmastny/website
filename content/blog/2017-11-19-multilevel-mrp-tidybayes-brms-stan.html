@@ -1842,29 +1842,114 @@ Census &lt;- Census %&gt;%
 </div>
 <div id="model-2-maximum-likelihood-multilevel-model" class="section level2">
 <h2>Model 2: Maximum Likelihood Multilevel Model</h2>
-<pre class="r"><code># approx.mod &lt;- glmer(formula = yes.of.all ~ (1|race.female) 
-#                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
-#                     + (1|state) + (1|region) + (1|poll) 
-#                     + p.relig + kerry.04,
-#                     data=marriage.data, family=binomial(link=&quot;logit&quot;))</code></pre>
-<pre class="r"><code># summary(approx.mod)</code></pre>
+<pre class="r"><code>approx.mod &lt;- glmer(formula = yes.of.all ~ (1|race.female)
+                    + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat)
+                    + (1|state) + (1|region) + (1|poll)
+                    + p.relig + kerry.04,
+                    data=marriage.data, family=binomial(link=&quot;logit&quot;))</code></pre>
+<pre class="r"><code>summary(approx.mod)</code></pre>
+<pre><code>## Generalized linear mixed model fit by maximum likelihood (Laplace
+##   Approximation) [glmerMod]
+##  Family: binomial  ( logit )
+## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) +  
+##     (1 | age.edu.cat) + (1 | state) + (1 | region) + (1 | poll) +  
+##     p.relig + kerry.04
+##    Data: marriage.data
+## 
+##      AIC      BIC   logLik deviance df.resid 
+##   7459.4   7527.0  -3719.7   7439.4     6331 
+## 
+## Scaled residuals: 
+##    Min     1Q Median     3Q    Max 
+## -2.166 -0.705 -0.477  0.981  3.883 
+## 
+## Random effects:
+##  Groups      Name        Variance Std.Dev.
+##  state       (Intercept) 0.001333 0.03651 
+##  age.edu.cat (Intercept) 0.007711 0.08782 
+##  race.female (Intercept) 0.054568 0.23360 
+##  poll        (Intercept) 0.042179 0.20538 
+##  region      (Intercept) 0.038087 0.19516 
+##  edu.cat     (Intercept) 0.129593 0.35999 
+##  age.cat     (Intercept) 0.306974 0.55405 
+## Number of obs: 6341, groups:  
+## state, 49; age.edu.cat, 16; race.female, 6; poll, 5; region, 5; edu.cat, 4; age.cat, 4
+## 
+## Fixed effects:
+##              Estimate Std. Error z value Pr(&gt;|z|)   
+## (Intercept) -1.406648   0.541263  -2.599  0.00935 **
+## p.relig     -0.015250   0.004991  -3.056  0.00225 **
+## kerry.04     0.018259   0.006924   2.637  0.00836 **
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Correlation of Fixed Effects:
+##          (Intr) p.relg
+## p.relig  -0.543       
+## kerry.04 -0.717  0.653</code></pre>
 <p>First, note that I didn’t include the standard error from the MLE method. In general, this is <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">hard to do</a>, but we get the percentile intervals for free with using <code>brms</code>.</p>
 </div>
 <div id="model-3-full-bayesian-model" class="section level2">
 <h2>Model 3: Full Bayesian Model</h2>
-<pre class="r"><code># bayes.mod &lt;- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
-#                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
-#                  + p.relig + kerry.04,
-#                  data=marriage.data, family=bernoulli(),
-#                  prior=c(set_prior(&quot;normal(0,0.2)&quot;, class=&#39;b&#39;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;race.female&quot;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.cat&quot;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
-#                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
-<pre class="r"><code># summary(bayes.mod)</code></pre>
+<pre class="r"><code>bayes.mod &lt;- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
+                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+                 + p.relig + kerry.04,
+                 data=marriage.data, family=bernoulli(),
+                 prior=c(set_prior(&quot;normal(0,0.2)&quot;, class=&#39;b&#39;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;race.female&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.cat&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
+<pre class="r"><code>summary(bayes.mod)</code></pre>
+<pre><code>##  Family: bernoulli 
+##   Links: mu = logit 
+## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) + (1 | age.edu.cat) + (1 | state) + (1 | region) + (1 | poll) + p.relig + kerry.04 
+##    Data: marriage.data (Number of observations: 6341) 
+## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
+##          total post-warmup samples = 4000
+##     ICs: LOO = NA; WAIC = NA; R2 = NA
+##  
+## Group-Level Effects: 
+## ~age.cat (Number of levels: 4) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.42      0.09     0.26     0.63       3214 1.00
+## 
+## ~age.edu.cat (Number of levels: 16) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.10      0.06     0.01     0.25       1457 1.00
+## 
+## ~edu.cat (Number of levels: 4) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.32      0.09     0.17     0.52       3115 1.00
+## 
+## ~poll (Number of levels: 5) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.22      0.07     0.11     0.40       2334 1.00
+## 
+## ~race.female (Number of levels: 6) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.24      0.07     0.12     0.41       2425 1.00
+## 
+## ~region (Number of levels: 5) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.22      0.08     0.10     0.42       4000 1.00
+## 
+## ~state (Number of levels: 49) 
+##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## sd(Intercept)     0.06      0.04     0.00     0.16       1738 1.00
+## 
+## Population-Level Effects: 
+##           Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+## Intercept    -1.39      0.53    -2.42    -0.34       2695 1.00
+## p.relig      -0.02      0.01    -0.03    -0.01       4000 1.00
+## kerry.04      0.02      0.01     0.00     0.03       4000 1.00
+## 
+## Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+## is a crude measure of effective sample size, and Rhat is the potential 
+## scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>

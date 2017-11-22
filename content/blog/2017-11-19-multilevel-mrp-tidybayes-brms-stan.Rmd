@@ -198,14 +198,14 @@ The lack of data for some voter groups makes poststratifying on the state level 
 ## Model 2: Maximum Likelihood Multilevel Model
 
 ```{r}
-# approx.mod <- glmer(formula = yes.of.all ~ (1|race.female) 
-#                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat) 
-#                     + (1|state) + (1|region) + (1|poll) 
-#                     + p.relig + kerry.04,
-#                     data=marriage.data, family=binomial(link="logit"))
+approx.mod <- glmer(formula = yes.of.all ~ (1|race.female)
+                    + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat)
+                    + (1|state) + (1|region) + (1|poll)
+                    + p.relig + kerry.04,
+                    data=marriage.data, family=binomial(link="logit"))
 ```
 ```{r}
-# summary(approx.mod)
+summary(approx.mod)
 ```
 
 First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
@@ -213,21 +213,21 @@ First, note that I didn't include the standard error from the MLE method. In gen
 ## Model 3: Full Bayesian Model
 
 ```{r, results='hide'}
-# bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
-#                  + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
-#                  + p.relig + kerry.04,
-#                  data=marriage.data, family=bernoulli(),
-#                  prior=c(set_prior("normal(0,0.2)", class='b'),
-#                          set_prior("normal(0,0.2)", class='sd', group="race.female"),
-#                          set_prior("normal(0,0.2)", class='sd', group="age.cat"),
-#                          set_prior("normal(0,0.2)", class='sd', group="edu.cat"),
-#                          set_prior("normal(0,0.2)", class='sd', group="age.edu.cat"),
-#                          set_prior("normal(0,0.2)", class='sd', group="state"),
-#                          set_prior("normal(0,0.2)", class='sd', group="region"),
-#                          set_prior("normal(0,0.2)", class='sd', group="poll")))
+bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
+                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+                 + p.relig + kerry.04,
+                 data=marriage.data, family=bernoulli(),
+                 prior=c(set_prior("normal(0,0.2)", class='b'),
+                         set_prior("normal(0,0.2)", class='sd', group="race.female"),
+                         set_prior("normal(0,0.2)", class='sd', group="age.cat"),
+                         set_prior("normal(0,0.2)", class='sd', group="edu.cat"),
+                         set_prior("normal(0,0.2)", class='sd', group="age.edu.cat"),
+                         set_prior("normal(0,0.2)", class='sd', group="state"),
+                         set_prior("normal(0,0.2)", class='sd', group="region"),
+                         set_prior("normal(0,0.2)", class='sd', group="poll")))
 ```
 ```{r}
-# summary(bayes.mod)
+summary(bayes.mod)
 ```
 
 
