@@ -180,7 +180,7 @@ plot_grid(disag.point, disag.scat)
 
 And here's the problem:
 
-```{r}
+```{r, out.height='1in'}
 grp.means %>%
   group_by(state) %>%
   summarise(total_percent = sum(cpercent.state, na.rm=TRUE)) %>%
