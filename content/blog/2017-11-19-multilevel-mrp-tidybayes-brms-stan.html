@@ -133,7 +133,7 @@ Census &lt;- Census %&gt;%
 disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
   filter(state != &quot;&quot;) %&gt;%
   ggplot(aes(x = support, y=support1)) + 
-  geom_point() +
+  geom_text(aes(label=state), hjust=0.5, vjust=0.25) +
   geom_abline(slope = 1, intercept = 0) +
   xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
   xlab(&quot;support&quot;) + ylab(&quot;poststrat support&quot;) +
