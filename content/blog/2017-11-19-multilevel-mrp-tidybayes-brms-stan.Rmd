@@ -160,8 +160,7 @@ disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
   geom_point() + 
   theme_classic() + theme(legend.position = 'none') +  
   directlabels::geom_dl(aes(label=model), method='smart.grid') +
-  ylab('state') + 
-  coord_fixed()
+  ylab('state')
 
 disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
   filter(state != "") %>%
