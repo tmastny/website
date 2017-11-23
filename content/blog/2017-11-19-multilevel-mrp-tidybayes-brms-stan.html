@@ -154,7 +154,7 @@ plot_grid(disag.point, disag.scat)</code></pre>
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
   coord_fixed(ratio=8)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-11-1.png" width="672" height="300px" /></p>
 <p>The lack of data for some voter groups makes poststratifying on the state level impossible and/or meaningless. This scenario actually motivates multilevel regression. As we’ll see in the next section, the multilevel model assumes similar demographic groups tend to vote the same. For example, suppose no black women were polled in South Dakota. Instead of producing skewed estimates, we can estimate the proportion of support black women have for gay marriage in South Dakota by level of support (and variation of support) black women have in all other states.</p>
 </div>
 <div id="model-2-maximum-likelihood-multilevel-model" class="section level2">
