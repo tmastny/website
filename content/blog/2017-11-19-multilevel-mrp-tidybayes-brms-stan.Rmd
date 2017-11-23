@@ -153,8 +153,8 @@ mod.disag.ps <- grp.means %>%
 
 Here's the difference:
 
-```{r, fig.align='center', fig.width=5, fig.height=5}
-bind_rows(mod.disag, mod.disag.ps) %>%
+```{r}
+disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
   arrange(support) %>%
   filter(state != "") %>%
   ggplot(aes(x = support, y=reorder(state, support), color=model)) + 
@@ -162,6 +162,16 @@ bind_rows(mod.disag, mod.disag.ps) %>%
   theme_classic() + theme(legend.position = 'none') +  
   directlabels::geom_dl(aes(label=model), method='smart.grid') +
   ylab('state')
+
+disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
+  filter(state != "") %>%
+  ggplot(aes(x = support, y=support1)) + 
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
+  xlab("support") + ylab("poststrat support")
+
+plot_grid(disag.point, disag.scat)
 ```
 
 ** try ggcow subset within subject plot

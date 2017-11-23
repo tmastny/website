@@ -122,7 +122,7 @@ Census &lt;- Census %&gt;%
   summarise(support = sum(support * cpercent.state, na.rm=TRUE)) %&gt;%
   mutate(model = &quot;ps&quot;)</code></pre>
 <p>Here’s the difference:</p>
-<pre class="r"><code>bind_rows(mod.disag, mod.disag.ps) %&gt;%
+<pre class="r"><code>disag.point &lt;- bind_rows(mod.disag, mod.disag.ps) %&gt;%
   arrange(support) %&gt;%
   filter(state != &quot;&quot;) %&gt;%
   ggplot(aes(x = support, y=reorder(state, support), color=model)) + 
@@ -130,7 +130,6 @@ Census &lt;- Census %&gt;%
   theme_classic() + theme(legend.position = &#39;none&#39;) +  
   directlabels::geom_dl(aes(label=model), method=&#39;smart.grid&#39;) +
   ylab(&#39;state&#39;)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-10-1.png" width="480" style="display: block; margin: auto;" /></p>
 <p>** try ggcow subset within subject plot</p>
 <p>And here’s the problem:</p>
 <pre class="r"><code>grp.means %&gt;%
