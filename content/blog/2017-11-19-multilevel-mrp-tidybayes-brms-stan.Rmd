@@ -174,7 +174,7 @@ disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
 plot_grid(disag.point, disag.scat)
 ```
 
-** try ggcow subset within subject plot
+*** try ggcow subset within subject plot
 
 And here's the problem:
 
