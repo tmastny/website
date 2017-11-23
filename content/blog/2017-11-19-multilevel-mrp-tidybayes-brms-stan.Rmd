@@ -7,7 +7,6 @@ categories: []
 tags: []
 description: Multilevel Regression and Poststratification with Stan
 meta_img: /images/image.jpg
-draft: true
 output:
   blogdown::html_page:
     toc: true

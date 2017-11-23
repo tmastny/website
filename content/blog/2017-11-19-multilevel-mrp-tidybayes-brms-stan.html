@@ -7,7 +7,6 @@ categories: []
 tags: []
 description: Multilevel Regression and Poststratification with Stan
 meta_img: /images/image.jpg
-draft: true
 output:
   blogdown::html_page:
     toc: true
@@ -129,7 +128,18 @@ Census &lt;- Census %&gt;%
   geom_point() + 
   theme_classic() + theme(legend.position = &#39;none&#39;) +  
   directlabels::geom_dl(aes(label=model), method=&#39;smart.grid&#39;) +
-  ylab(&#39;state&#39;)</code></pre>
+  ylab(&#39;state&#39;)
+
+disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
+  filter(state != &quot;&quot;) %&gt;%
+  ggplot(aes(x = support, y=support1)) + 
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
+  xlab(&quot;support&quot;) + ylab(&quot;poststrat support&quot;)
+
+plot_grid(disag.point, disag.scat)</code></pre>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <p>** try ggcow subset within subject plot</p>
 <p>And here’s the problem:</p>
 <pre class="r"><code>grp.means %&gt;%
