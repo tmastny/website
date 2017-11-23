@@ -152,7 +152,7 @@ mod.disag.ps <- grp.means %>%
 
 Here's the difference:
 
-```{r, fig.align='center', fig.width=4, fig.height=4}
+```{r}
 disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
   arrange(support) %>%
   filter(state != "") %>%
