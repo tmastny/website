@@ -43,6 +43,7 @@ library(brms)
 library(rstan)
 library(albersusa)
 library(cowplot)
+library(forcats)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -154,9 +155,10 @@ Here's the difference:
 
 ```{r}
 disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
-  arrange(support) %>%
+  group_by(model) %>%
+  arrange(support, .by_group=TRUE) %>%
   filter(state != "") %>%
-  ggplot(aes(x = support, y=reorder(state, support), color=model)) + 
+  ggplot(aes(x = support, y=forcats::fct_inorder(state), color=model)) + 
   geom_point() + 
   theme_classic() + theme(legend.position = 'none') +  
   directlabels::geom_dl(aes(label=model), method='smart.grid') +

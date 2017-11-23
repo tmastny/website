@@ -45,6 +45,7 @@ library(brms)
 library(rstan)
 library(albersusa)
 library(cowplot)
+library(forcats)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())</code></pre>
@@ -122,9 +123,10 @@ Census &lt;- Census %&gt;%
   mutate(model = &quot;ps&quot;)</code></pre>
 <p>Here’s the difference:</p>
 <pre class="r"><code>disag.point &lt;- bind_rows(mod.disag, mod.disag.ps) %&gt;%
-  arrange(support) %&gt;%
+  group_by(model) %&gt;%
+  arrange(support, .by_group=TRUE) %&gt;%
   filter(state != &quot;&quot;) %&gt;%
-  ggplot(aes(x = support, y=reorder(state, support), color=model)) + 
+  ggplot(aes(x = support, y=forcats::fct_inorder(state), color=model)) + 
   geom_point() + 
   theme_classic() + theme(legend.position = &#39;none&#39;) +  
   directlabels::geom_dl(aes(label=model), method=&#39;smart.grid&#39;) +
