@@ -160,7 +160,8 @@ disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
   geom_point() + 
   theme_classic() + theme(legend.position = 'none') +  
   directlabels::geom_dl(aes(label=model), method='smart.grid') +
-  ylab('state')
+  ylab('state') + 
+  coord_fixed()
 
 disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
   filter(state != "") %>%
@@ -168,7 +169,8 @@ disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
   geom_point() +
   geom_abline(slope = 1, intercept = 0) +
   xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
-  xlab("support") + ylab("poststrat support")
+  xlab("support") + ylab("poststrat support") +
+  coord_fixed()
 
 plot_grid(disag.point, disag.scat)
 ```
