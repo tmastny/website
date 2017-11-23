@@ -177,7 +177,7 @@ plot_grid(disag.point, disag.scat)
 
 And here's the problem:
 
-```{r, fig.align='center'}
+```{r, fig.align='center', fig.width=4, fig.height=4}
 grp.means %>%
   group_by(state) %>%
   summarise(total_percent = sum(cpercent.state, na.rm=TRUE)) %>%
