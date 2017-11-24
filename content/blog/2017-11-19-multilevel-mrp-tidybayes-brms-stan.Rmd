@@ -150,7 +150,7 @@ mod.disag.ps <- grp.means %>%
   mutate(model = "ps")
 ```
 
-Here's the difference:
+Here's the difference between poststratified and the empricial means:
 
 ```{r}
 disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
@@ -175,9 +175,18 @@ disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
 plot_grid(disag.point, disag.scat)
 ```
 
-*** try ggcow subset within subject plot
+The left plot shows a lot of variation between the poststratified averages. The right plot indicates that every poststratified state average is pushed near zero. That's not necessarily a problem in its down right, but we should still debug the model.
 
-And here's the problem:
+Within each state, each group is a percentage of the total. And the percentages of each group should add up to one, the entire state population:
+
+```{r}
+Census %>%
+  group_by(state) %>%
+  summarise(percent = sum(cpercent.state)) %>%
+  arrange(desc(percent))
+```
+
+What's going own in our model? Let's sum of the percent of demographic groups we have in each state.
 
 ```{r}
 grp.means %>%
@@ -191,8 +200,7 @@ grp.means %>%
   coord_fixed(ratio=8) + ylim(c(0,1.1))
 ```
 
-
-
+So clearly the survey does not have samples from each demographic group within each state. 
 
 The lack of data for some voter groups makes poststratifying on the state level impossible and/or meaningless. This scenario actually motivates multilevel regression. As we'll see in the next section, the multilevel model assumes similar demographic groups tend to vote the same. For example, suppose no black women were polled in South Dakota. Instead of producing skewed estimates, we can estimate the proportion of support black women have for gay marriage in South Dakota by level of support (and variation of support) black women have in all other states. 
 

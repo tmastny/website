@@ -120,7 +120,7 @@ Census &lt;- Census %&gt;%
   group_by(state) %&gt;%
   summarise(support = sum(support * cpercent.state, na.rm=TRUE)) %&gt;%
   mutate(model = &quot;ps&quot;)</code></pre>
-<p>Here’s the difference:</p>
+<p>Here’s the difference between poststratified and the empricial means:</p>
 <pre class="r"><code>disag.point &lt;- bind_rows(mod.disag, mod.disag.ps) %&gt;%
   group_by(model) %&gt;%
   arrange(support, .by_group=TRUE) %&gt;%
@@ -142,8 +142,27 @@ disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
 
 plot_grid(disag.point, disag.scat)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
-<p>*** try ggcow subset within subject plot</p>
-<p>And here’s the problem:</p>
+<p>The left plot shows a lot of variation between the poststratified averages. The right plot indicates that every poststratified state average is pushed near zero. That’s not necessarily a problem in its down right, but we should still debug the model.</p>
+<p>Within each state, each group is a percentage of the total. And the percentages of each group should add up to one, the entire state population:</p>
+<pre class="r"><code>Census %&gt;%
+  group_by(state) %&gt;%
+  summarise(percent = sum(cpercent.state)) %&gt;%
+  arrange(desc(percent))</code></pre>
+<pre><code>## # A tibble: 51 x 2
+##    state percent
+##    &lt;chr&gt;   &lt;dbl&gt;
+##  1    IN       1
+##  2    MA       1
+##  3    IL       1
+##  4    NV       1
+##  5    WY       1
+##  6    KS       1
+##  7    NH       1
+##  8    NM       1
+##  9    AK       1
+## 10    ME       1
+## # ... with 41 more rows</code></pre>
+<p>What’s going own in our model? Let’s sum of the percent of demographic groups we have in each state.</p>
 <pre class="r"><code>grp.means %&gt;%
   group_by(state) %&gt;%
   summarise(total_percent = sum(cpercent.state, na.rm=TRUE)) %&gt;%
@@ -153,7 +172,8 @@ plot_grid(disag.point, disag.scat)</code></pre>
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
   coord_fixed(ratio=8) + ylim(c(0,1.1))</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>So clearly the survey does not have samples from each demographic group within each state.</p>
 <p>The lack of data for some voter groups makes poststratifying on the state level impossible and/or meaningless. This scenario actually motivates multilevel regression. As we’ll see in the next section, the multilevel model assumes similar demographic groups tend to vote the same. For example, suppose no black women were polled in South Dakota. Instead of producing skewed estimates, we can estimate the proportion of support black women have for gay marriage in South Dakota by level of support (and variation of support) black women have in all other states.</p>
 </div>
 <div id="model-2-maximum-likelihood-multilevel-model" class="section level2">
@@ -177,32 +197,34 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## 
 ## Scaled residuals: 
 ##    Min     1Q Median     3Q    Max 
-## -2.166 -0.705 -0.477  0.981  3.883 
+## -2.166 -0.705 -0.477  0.981  3.884 
 ## 
 ## Random effects:
 ##  Groups      Name        Variance Std.Dev.
-##  state       (Intercept) 0.001333 0.03651 
-##  age.edu.cat (Intercept) 0.007711 0.08782 
-##  race.female (Intercept) 0.054568 0.23360 
-##  poll        (Intercept) 0.042179 0.20538 
+##  state       (Intercept) 0.001332 0.03649 
+##  age.edu.cat (Intercept) 0.007712 0.08782 
+##  race.female (Intercept) 0.054566 0.23359 
+##  poll        (Intercept) 0.042177 0.20537 
 ##  region      (Intercept) 0.038087 0.19516 
-##  edu.cat     (Intercept) 0.129593 0.35999 
-##  age.cat     (Intercept) 0.306974 0.55405 
+##  edu.cat     (Intercept) 0.129591 0.35999 
+##  age.cat     (Intercept) 0.306982 0.55406 
 ## Number of obs: 6341, groups:  
 ## state, 49; age.edu.cat, 16; race.female, 6; poll, 5; region, 5; edu.cat, 4; age.cat, 4
 ## 
 ## Fixed effects:
 ##              Estimate Std. Error z value Pr(&gt;|z|)   
-## (Intercept) -1.406648   0.541263  -2.599  0.00935 **
-## p.relig     -0.015250   0.004991  -3.056  0.00225 **
-## kerry.04     0.018259   0.006924   2.637  0.00836 **
+## (Intercept) -1.406573   0.541074  -2.600  0.00933 **
+## p.relig     -0.015250   0.004990  -3.056  0.00224 **
+## kerry.04     0.018258   0.006922   2.638  0.00835 **
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
 ##          (Intr) p.relg
 ## p.relig  -0.543       
-## kerry.04 -0.717  0.653</code></pre>
+## kerry.04 -0.716  0.653
+## convergence code: 0
+## Model failed to converge with max|grad| = 0.00102765 (tol = 0.001, component 1)</code></pre>
 <p>First, note that I didn’t include the standard error from the MLE method. In general, this is <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">hard to do</a>, but we get the percentile intervals for free with using <code>brms</code>.</p>
 </div>
 <div id="model-3-full-bayesian-model" class="section level2">
@@ -231,35 +253,35 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## Group-Level Effects: 
 ## ~age.cat (Number of levels: 4) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.42      0.09     0.26     0.63       3214 1.00
+## sd(Intercept)     0.42      0.10     0.26     0.63       4000 1.00
 ## 
 ## ~age.edu.cat (Number of levels: 16) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.10      0.06     0.01     0.25       1457 1.00
+## sd(Intercept)     0.10      0.06     0.01     0.24       1536 1.00
 ## 
 ## ~edu.cat (Number of levels: 4) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.32      0.09     0.17     0.52       3115 1.00
+## sd(Intercept)     0.31      0.09     0.16     0.53       4000 1.00
 ## 
 ## ~poll (Number of levels: 5) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.22      0.07     0.11     0.40       2334 1.00
+## sd(Intercept)     0.22      0.08     0.11     0.41       2485 1.00
 ## 
 ## ~race.female (Number of levels: 6) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.24      0.07     0.12     0.41       2425 1.00
+## sd(Intercept)     0.24      0.07     0.12     0.42       2939 1.00
 ## 
 ## ~region (Number of levels: 5) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.22      0.08     0.10     0.42       4000 1.00
+## sd(Intercept)     0.22      0.09     0.09     0.43       3089 1.00
 ## 
 ## ~state (Number of levels: 49) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.06      0.04     0.00     0.16       1738 1.00
+## sd(Intercept)     0.07      0.04     0.00     0.16       1507 1.00
 ## 
 ## Population-Level Effects: 
 ##           Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## Intercept    -1.39      0.53    -2.42    -0.34       2695 1.00
+## Intercept    -1.42      0.53    -2.47    -0.39       2652 1.00
 ## p.relig      -0.02      0.01    -0.03    -0.01       4000 1.00
 ## kerry.04      0.02      0.01     0.00     0.03       4000 1.00
 ## 
