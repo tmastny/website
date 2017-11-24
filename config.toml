@@ -1,4 +1,4 @@
-baseurl = "https://timmastny.netlify.com/"
+baseurl = "https://timmastny.rbind.io"
 theme = "cocoa-eh"
 builddrafts = true
 canonifyurls = true
