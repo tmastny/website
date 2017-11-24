@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE,
 
 ## Introduction
 
-In the last post I wrote the ["MRP Primer" Primer](https://timmastny.netlify.com/blog/poststratification-with-dplyr/) studying the *p* part of MRP: poststratification. This post explores the actual [MRP Primer by Jonathan Kastellec](http://www.princeton.edu/~jkastell/mrp_primer.html). Jonathan and his coauthors wrote this excellent tutorial on Multilevel Regression and Poststratification (MRP) using `r-base` and `arm`/`lme4`.
+In the last post I wrote the ["MRP Primer" Primer](https://timmastny.rbind.io/blog/poststratification-with-dplyr/) studying the *p* part of MRP: poststratification. This post explores the actual [MRP Primer by Jonathan Kastellec](http://www.princeton.edu/~jkastell/mrp_primer.html). Jonathan and his coauthors wrote this excellent tutorial on Multilevel Regression and Poststratification (MRP) using `r-base` and `arm`/`lme4`.
 
 The aim of the MRP Primer is to estimate state level opinions for gay marriage based on a potentially non-representative survey data. That requires poststratification. As was done in the last post, we are going to use external Census data to scale the average support of each demographic group in proportion to its percentage of the state population.
 
@@ -51,7 +51,7 @@ options(mc.cores=parallel::detectCores())
 
 ## The Data
 
-Here are the three data sets we'll need. First the `marriage.data` is a compilation of gay marriage polls that we hope can give us a perspective on the support of gay marriage state by state. `Statelevel` provides some additional state information we'll use as predictors in our model, such as the proportion of religious voters. And just like [last time](https://timmastny.netlify.com/blog/poststratification-with-dplyr/), the Census data will provide our poststratification weights. 
+Here are the three data sets we'll need. First the `marriage.data` is a compilation of gay marriage polls that we hope can give us a perspective on the support of gay marriage state by state. `Statelevel` provides some additional state information we'll use as predictors in our model, such as the proportion of religious voters. And just like [last time](https://timmastny.rbind.io/blog/poststratification-with-dplyr/), the Census data will provide our poststratification weights. 
 
 ```{r}
 marriage.data <- foreign::read.dta('gay_marriage_megapoll.dta',

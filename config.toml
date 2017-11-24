@@ -1,4 +1,4 @@
-baseurl = "https://timmastny.rbind.io"
+baseurl = "https://timmastny.rbind.io/"
 theme = "cocoa-eh"
 builddrafts = true
 canonifyurls = true
