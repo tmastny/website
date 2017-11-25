@@ -83,7 +83,7 @@ How then do we estimate the overall population mean based on `poll_data`? We nee
 
 Let $X_a = x_{a1}, x_{a2}, \dots, x_{a25}$ and $X_b = x_{b1}, x_{b2}, \dots, x_{b50}$ be the data indicating support for each demographic. Then using $\bar{X}$, we have
 
-\[x + 4\]
+\[x + 4 \\ x + 5 \]
 \[ 
 \begin{align*}
 \bar{X} &= \frac{1}{75}\sum_{i=1}^{75}x_i \\
