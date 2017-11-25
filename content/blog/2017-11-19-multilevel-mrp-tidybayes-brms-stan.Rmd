@@ -210,12 +210,6 @@ However, we do have the responses from black men from neighboring states and all
 
 In our disaggrated model, we took the empirical averages for each demographic group. That is 
 
-latex test
-\[
-4 &= 2 + 2\\
-&= 2\cdot 2
-\]
-
 The next model is our first multilevel regression. The key idea behind the multilevel model^[[Here](https://cran.r-project.org/web/packages/rstanarm/vignettes/pooling.html) is a good introduction with `rstanarm`.] is that the level of support for gay marriage among, for example, races is partially pooled with information from other races. Multilevel regression is a compromise between two extremes: 
 
 1. No pooling: the assumption that each race has a completely independent opinion on gay marriage
