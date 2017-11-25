@@ -142,8 +142,8 @@ disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
 
 plot_grid(disag.point, disag.scat)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
-<p>The left plot shows a lot of variation between the poststratified averages. The right plot indicates that every poststratified state average is pushed near zero. That’s not necessarily a problem in its down right, but we should still debug the model.</p>
-<p>Within each state, each group is a percentage of the total. And the percentages of each group should add up to one, the entire state population:</p>
+<p>The left plot shows a lot of variation between the poststratified averages. The right plot<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> indicates that every poststratified state average is pushed near zero. That’s not necessarily a problem in its down right, but we should still debug the model.</p>
+<p>Within each state, each group is a certain percentage of the total populations. And the percentages of each group should add up to one, the entire state population:</p>
 <pre class="r"><code>Census %&gt;%
   group_by(state) %&gt;%
   summarise(percent = sum(cpercent.state)) %&gt;%
@@ -162,7 +162,7 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ##  9    AK       1
 ## 10    ME       1
 ## # ... with 41 more rows</code></pre>
-<p>What’s going own in our model? Let’s sum of the percent of demographic groups we have in each state.</p>
+<p>What’s going own in our model? Let’s look at the total percent of demographic groups included in the survey by each state.</p>
 <pre class="r"><code>grp.means %&gt;%
   group_by(state) %&gt;%
   summarise(total_percent = sum(cpercent.state, na.rm=TRUE)) %&gt;%
@@ -173,11 +173,23 @@ plot_grid(disag.point, disag.scat)</code></pre>
         axis.ticks.x=element_blank()) + 
   coord_fixed(ratio=8) + ylim(c(0,1.1))</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-<p>So clearly the survey does not have samples from each demographic group within each state.</p>
-<p>The lack of data for some voter groups makes poststratifying on the state level impossible and/or meaningless. This scenario actually motivates multilevel regression. As we’ll see in the next section, the multilevel model assumes similar demographic groups tend to vote the same. For example, suppose no black women were polled in South Dakota. Instead of producing skewed estimates, we can estimate the proportion of support black women have for gay marriage in South Dakota by level of support (and variation of support) black women have in all other states.</p>
+<p>Clearly the survey does not have responses from each demographic group in each state. This lack of data makes poststratifying on the state level uninformative, since there is no subgroup average to make. Implicitly, this model is assuming the missing demographic group’s support is 0%.</p>
+<p>But that isn’t a sound model. Let’s take black men for example. Our survey has no responses from black men in South Dakota, but they make up x% of the state. We would be underestimating the level of support in the state by assuming no black men support gay marriage.</p>
+<p>However, we do have the responses from black men from neighboring states and all other states around the country. It would be better to use that data to make an informative guess for the level of support black men have in South Dakota. This idea motivates the use of multilevel regression.</p>
 </div>
 <div id="model-2-maximum-likelihood-multilevel-model" class="section level2">
 <h2>Model 2: Maximum Likelihood Multilevel Model</h2>
+<p>In our disaggrated model, we took the empirical averages for each demographic group. That is</p>
+<p>latex test <span class="math display">\[
+4 &amp;= 2 + 2\\
+&amp;= 2\cdot 2
+\]</span></p>
+<p>The next model is our first multilevel regression. The key idea behind the multilevel model<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> is that the level of support for gay marriage among, for example, races is partially pooled with information from other races. Multilevel regression is a compromise between two extremes:</p>
+<ol style="list-style-type: decimal">
+<li><p>No pooling: the assumption that each race has a completely independent opinion on gay marriage</p></li>
+<li><p>Complete pooling: The assumption that all races have the same opinion</p></li>
+</ol>
+<p>The model accomplishes this by allowing each group to have a varying intercept that is sampled from an estimated population distribution of varying intercepts. Our first model will be the maximam likelihood approximation to the full Bayesian model. This is the model Jonathan fits in the MRP Primer.</p>
 <pre class="r"><code>approx.mod &lt;- glmer(formula = yes.of.all ~ (1|race.female)
                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat)
                     + (1|state) + (1|region) + (1|poll)
@@ -291,5 +303,11 @@ plot_grid(disag.point, disag.scat)</code></pre>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
-<p>One comparison I like is what Matt Vuorre calls <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a>. Although we are using them for a difference purpose here, the basic idea is really neat. Austin Rochford also uses a similar chart, but instead of dots I am going to plot the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">state abbreviation</a>.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>The idea for this plot comes from Matt Vuorre, who called them <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a> in his blog post. Austin Rochford also uses a similar chart in his MRP Prime walkthrough. And I am using the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> state <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">abbreviation</a> labels instead of points as Gelman recommends.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p><a href="https://cran.r-project.org/web/packages/rstanarm/vignettes/pooling.html">Here</a> is a good introduction with <code>rstanarm</code>.<a href="#fnref2">↩</a></p></li>
+</ol>
 </div>
