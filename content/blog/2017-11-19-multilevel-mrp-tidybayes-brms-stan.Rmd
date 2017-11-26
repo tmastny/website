@@ -317,8 +317,7 @@ Unlike the previous model which only make predicted values based on the point es
 
 ```{r, cache.lazy = FALSE}
 ps.bayes.mod <- bayes.mod %>%
-  add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %>%
-  mutate(pred = pred * cpercent.state)
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)
 
 ps.bayes.mod %>%
   ggplot(aes(y=state, x=pred)) +

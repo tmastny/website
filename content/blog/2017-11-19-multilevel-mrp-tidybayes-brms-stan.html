@@ -348,8 +348,7 @@ bayes.mod %&gt;%
 <p>The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
 <p>Unlike the previous model which only make predicted values based on the point estimates from the regression, our full Bayesian model makes predictions for each iteration over the posterior. This allows us to poststratify the distribution of possible state-level support for gay marriage:</p>
 <pre class="r"><code>ps.bayes.mod &lt;- bayes.mod %&gt;%
-  add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %&gt;%
-  mutate(pred = pred * cpercent.state)
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)
 
 ps.bayes.mod %&gt;%
   ggplot(aes(y=state, x=pred)) +
