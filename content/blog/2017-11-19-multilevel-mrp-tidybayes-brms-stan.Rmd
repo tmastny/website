@@ -285,12 +285,13 @@ library(tidybayes)
 approx_sd <- broom::tidy(approx.mod) %>%
   filter(stringr::str_detect(term, "sd_"))
 
-density_plot <- bayes.mod %>%
+bayes.mod %>%
   gather_samples(`sd_.*`, regex=TRUE) %>%
   ungroup() %>%
   mutate(group = stringr::str_replace_all(term, c("sd_" = "","__Intercept"=""))) %>%
-  ggplot(aes(y=group, x = estimate, height = ..density..)) + 
-  ggridges::geom_density_ridges(rel_min_height = 0.01, stat = "density") + 
+  ggplot(aes(y=group, x = estimate)) + 
+  ggridges::geom_density_ridges(aes(height=..density..),
+                                rel_min_height = 0.01, stat = "density") + 
   geom_point(data=approx_sd)
 
 # approx_sd <- broom::tidy(individual.model) %>%

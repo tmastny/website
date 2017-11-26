@@ -320,15 +320,16 @@ plot_grid(disag.point, disag.scat)</code></pre>
 approx_sd &lt;- broom::tidy(approx.mod) %&gt;%
   filter(stringr::str_detect(term, &quot;sd_&quot;))
 
-density_plot &lt;- bayes.mod %&gt;%
+bayes.mod %&gt;%
   gather_samples(`sd_.*`, regex=TRUE) %&gt;%
   ungroup() %&gt;%
   mutate(group = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) %&gt;%
-  ggplot(aes(y=group, x = estimate, height = ..density..)) + 
-  ggridges::geom_density_ridges(rel_min_height = 0.01, stat = &quot;density&quot;) + 
-  geom_point(data=approx_sd)
-
-# approx_sd &lt;- broom::tidy(individual.model) %&gt;%
+  ggplot(aes(y=group, x = estimate)) + 
+  ggridges::geom_density_ridges(aes(height=..density..),
+                                rel_min_height = 0.01, stat = &quot;density&quot;) + 
+  geom_point(data=approx_sd)</code></pre>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<pre class="r"><code># approx_sd &lt;- broom::tidy(individual.model) %&gt;%
 #   filter(stringr::str_detect(term, &quot;sd_&quot;))
 
 
