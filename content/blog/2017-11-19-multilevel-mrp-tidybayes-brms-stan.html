@@ -314,7 +314,7 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 ## is a crude measure of effective sample size, and Rhat is the potential 
 ## scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>So what does this full Bayesian model give us that the approximate model lacks? The most obvious benefit is the total accounting of uncertainty in the model. For example, let’s take a look at the standard deviation of group-level intercepts:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
+<p>So what does this full Bayesian model give us that the approximate model lacks? The most obvious benefit is the total accounting of uncertainty in the model. For example, let’s take a look at the standard deviation of group-level intercepts:</p>
 <pre class="r"><code>library(tidybayes)
 
 approx_sd &lt;- broom::tidy(approx.mod) %&gt;%
@@ -330,17 +330,7 @@ bayes.mod %&gt;%
                                 scale=1.5) + 
   geom_point(data=approx_sd)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
-<pre class="r"><code># approx_sd &lt;- broom::tidy(individual.model) %&gt;%
-#   filter(stringr::str_detect(term, &quot;sd_&quot;))
-
-
-# bayes_sd %&gt;%
-#   inner_join(approx_sd, by=c(&quot;term&quot;=&quot;group&quot;)) %&gt;%
-#   ggplot(aes(y = term, x = estimate.x)) +
-#   geom_point(position = position_nudge(y = 0.1)) +
-#   geom_segment(aes(x=conf.low, xend=conf.high, yend=term),
-#              position = position_nudge(y = 0.1)) +
-#   geom_point(aes(x=estimate.y))</code></pre>
+<p>The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. Moreover, that point estimate does not necessarily reflect the peak of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
 <p>The <code>brms</code> model specification and package methods are initially based off of <code>lme4</code>, the package I used to fit the previous model. Therefore, we could build the predicted data the say way in the previous section.</p>
 <p>Instead, I’ll continue to use <code>tidybayes</code>.</p>
 </div>
@@ -352,6 +342,7 @@ bayes.mod %&gt;%
 <ol>
 <li id="fn1"><p>The idea for this plot comes from Matt Vuorre, who called them <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a> in his blog post. Austin Rochford also uses a similar chart in his MRP Prime walkthrough. And I am using the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> state <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">abbreviation</a> labels instead of points as Gelman recommends.<a href="#fnref1">↩</a></p></li>
 <li id="fn2"><p>By design the Census provides every combination of demographic groups within each state. If that wasn’t the case, I would enter in each unique demographic and state factor into <a href="https://github.com/tidyverse/modelr"><code>modelr::data_grid</code></a>, which would automiatcally generate every possible combination of results. This is a very useful tool.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>Technically, we could calculate the standard error from the approximate model. However, it may not <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">be accurate</a> and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to just fitting the entire model in <code>brms</code>.<a href="#fnref3">↩</a></p></li>
+<li id="fn3"><p>Technically, we could calculate the standard error from the approximate model. However, it <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">may not be accurate</a> and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to just fitting the entire model in brms<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>Check out <a href="https://towardsdatascience.com/understanding-objective-functions-in-neural-networks-d217cb068138">this article</a> for a nice discussion in the context of machine learning.<a href="#fnref4">↩</a></p></li>
 </ol>
 </div>
