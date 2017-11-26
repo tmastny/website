@@ -316,29 +316,22 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 <p>So what does this full Bayesian model give us that the approximate model lacks? The most obvious benefit is the total accounting of uncertainty in the model. For example, let’s take a look at the standard deviation of group-level intercepts:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
 <pre class="r"><code>library(tidybayes)
-bayes.mod %&gt;%
+
+approx_sd &lt;- broom::tidy(approx.mod) %&gt;%
+  filter(stringr::str_detect(term, &quot;sd_&quot;))
+
+density_plot &lt;- bayes.mod %&gt;%
   gather_samples(`sd_.*`, regex=TRUE) %&gt;%
   ungroup() %&gt;%
-  mutate(term = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) #%&gt;%</code></pre>
-<pre><code>## # A tibble: 24,000 x 4
-##    .chain .iteration    term  estimate
-##     &lt;int&gt;      &lt;int&gt;   &lt;chr&gt;     &lt;dbl&gt;
-##  1      1          1 age.cat 0.4941504
-##  2      1          2 age.cat 0.4956136
-##  3      1          3 age.cat 0.4198985
-##  4      1          4 age.cat 0.4455469
-##  5      1          5 age.cat 0.5649371
-##  6      1          6 age.cat 0.4593680
-##  7      1          7 age.cat 0.3758013
-##  8      1          8 age.cat 0.2609281
-##  9      1          9 age.cat 0.2980093
-## 10      1         10 age.cat 0.5157589
-## # ... with 23,990 more rows</code></pre>
-<pre class="r"><code>  # ggplot(aes(y=term, x = ))
+  mutate(group = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) %&gt;%
+  ggplot(aes(y=group, x = estimate, height = ..density..)) + 
+  ggridges::geom_density_ridges(rel_min_height = 0.01, stat = &quot;density&quot;) + 
+  geom_point(data=approx_sd)
 
 # approx_sd &lt;- broom::tidy(individual.model) %&gt;%
 #   filter(stringr::str_detect(term, &quot;sd_&quot;))
-# 
+
+
 # bayes_sd %&gt;%
 #   inner_join(approx_sd, by=c(&quot;term&quot;=&quot;group&quot;)) %&gt;%
 #   ggplot(aes(y = term, x = estimate.x)) +
@@ -356,7 +349,7 @@ bayes.mod %&gt;%
 <hr />
 <ol>
 <li id="fn1"><p>The idea for this plot comes from Matt Vuorre, who called them <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a> in his blog post. Austin Rochford also uses a similar chart in his MRP Prime walkthrough. And I am using the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> state <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">abbreviation</a> labels instead of points as Gelman recommends.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>By design the Census provides every combination of demographic groups within each state. If that wasn’t the case, I would enter in each unique demographic and state factor into <a href="https://github.com/tidyverse/modelr"><code>modelr</code></a><code>::data_grid</code>, which would automiatcally generate every possible combination of results. This is a very useful tool.<a href="#fnref2">↩</a></p></li>
+<li id="fn2"><p>By design the Census provides every combination of demographic groups within each state. If that wasn’t the case, I would enter in each unique demographic and state factor into <a href="https://github.com/tidyverse/modelr"><code>modelr::data_grid</code></a>, which would automiatcally generate every possible combination of results. This is a very useful tool.<a href="#fnref2">↩</a></p></li>
 <li id="fn3"><p>Technically, we could calculate the standard error from the approximate model. However, it may not <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">be accurate</a> and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to just fitting the entire model in <code>brms</code>.<a href="#fnref3">↩</a></p></li>
 </ol>
 </div>

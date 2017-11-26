@@ -233,7 +233,7 @@ summary(approx.mod)
 
 Jonathan manually builds the inverse link function and applies it to every row of the Census data to calculate the estimated state opinion on the state level taking into account each demographic group. I'll take a different approach here.
 
-The `lme4` package provides a method `predict` to easily make predictions on new data. This is a generic implementation of rebuilding the link function based off of regression coefficients. And if we apply `predict` to the Census data^[By design the Census provides every combination of demographic groups within each state. If that wasn't the case, I would enter in each unique demographic and state factor into [`modelr`](https://github.com/tidyverse/modelr)`::data_grid`, which would automiatcally generate every possible combination of results. This is a very useful tool.], we can also make estimates for groups not sampled in the survey, such as the missing black men in South Dakota we noted above, by applying the estimated black men opinion and the overall state opinion. 
+The `lme4` package provides a method `predict` to easily make predictions on new data. This is a generic implementation of rebuilding the link function based off of regression coefficients. And if we apply `predict` to the Census data^[By design the Census provides every combination of demographic groups within each state. If that wasn't the case, I would enter in each unique demographic and state factor into [`modelr::data_grid`](https://github.com/tidyverse/modelr), which would automiatcally generate every possible combination of results. This is a very useful tool.], we can also make estimates for groups not sampled in the survey, such as the missing black men in South Dakota we noted above, by applying the estimated black men opinion and the overall state opinion. 
 
 Moreover, we can also address other problems in the survey. For example,
 
@@ -281,15 +281,22 @@ So what does this full Bayesian model give us that the approximate model lacks? 
 
 ```{r}
 library(tidybayes)
-bayes.mod %>%
+
+approx_sd <- broom::tidy(approx.mod) %>%
+  filter(stringr::str_detect(term, "sd_"))
+
+density_plot <- bayes.mod %>%
   gather_samples(`sd_.*`, regex=TRUE) %>%
   ungroup() %>%
-  mutate(term = stringr::str_replace_all(term, c("sd_" = "","__Intercept"=""))) #%>%
-  # ggplot(aes(y=term, x = ))
+  mutate(group = stringr::str_replace_all(term, c("sd_" = "","__Intercept"=""))) %>%
+  ggplot(aes(y=group, x = estimate, height = ..density..)) + 
+  ggridges::geom_density_ridges(rel_min_height = 0.01, stat = "density") + 
+  geom_point(data=approx_sd)
 
 # approx_sd <- broom::tidy(individual.model) %>%
 #   filter(stringr::str_detect(term, "sd_"))
-# 
+
+
 # bayes_sd %>%
 #   inner_join(approx_sd, by=c("term"="group")) %>%
 #   ggplot(aes(y = term, x = estimate.x)) +
