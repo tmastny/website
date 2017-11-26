@@ -346,36 +346,16 @@ bayes.mod %&gt;%
   geom_point(data=approx_sd)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 <p>The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
-<p>Let’s fit this model to the Census data, and then do some model comparisons.</p>
-<pre class="r"><code># ps.bayes.mod &lt;- Census %&gt;%
-#   mutate(pred.support = predict(bayes.mod, newdata=.,
-#                                 allow_new_levels=TRUE)) %&gt;%
-#   mutate(pred.support = pred.support * cpercent.state) %&gt;%
-#   group_by(state) %&gt;%
-#   summarise(state.support = sum(pred.support))
+<p>Unlike the previous model which only make predicted values based on the point estimates from the regression, our full Bayesian model makes predictions for each iteration over the posterior. This allows us to poststratify the distribution of possible state-level support for gay marriage:</p>
+<pre class="r"><code>ps.bayes.mod &lt;- bayes.mod %&gt;%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %&gt;%
+  mutate(pred = pred * cpercent.state)
 
-bayes.mod %&gt;%
-  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)</code></pre>
-<pre><code>## # A tibble: 19,584,000 x 19
-## # Groups:   state, p.evang, p.mormon, kerry.04, crace.WBH, age.cat,
-## #   edu.cat, cfemale, .freq, cfreq.state, cpercent.state, region,
-## #   race.female, age.edu.cat, p.relig, .row [4,896]
-##    state p.evang p.mormon kerry.04 crace.WBH age.cat edu.cat cfemale .freq
-##    &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;int&gt;   &lt;int&gt;   &lt;int&gt;   &lt;int&gt; &lt;int&gt;
-##  1    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  2    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  3    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  4    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  5    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  6    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  7    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  8    AK   12.44 3.003126     35.5         1       1       1       0   467
-##  9    AK   12.44 3.003126     35.5         1       1       1       0   467
-## 10    AK   12.44 3.003126     35.5         1       1       1       0   467
-## # ... with 19,583,990 more rows, and 10 more variables: cfreq.state &lt;dbl&gt;,
-## #   cpercent.state &lt;dbl&gt;, region &lt;chr&gt;, race.female &lt;dbl&gt;,
-## #   age.edu.cat &lt;dbl&gt;, p.relig &lt;dbl&gt;, .row &lt;int&gt;, .chain &lt;dbl&gt;,
-## #   .iteration &lt;int&gt;, pred &lt;int&gt;</code></pre>
+ps.bayes.mod %&gt;%
+  ggplot(aes(y=state, x=pred)) +
+  ggridges::geom_density_ridges(aes(height=..density..),
+                                rel_min_height = 0.01, stat = &quot;density&quot;)</code></pre>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>

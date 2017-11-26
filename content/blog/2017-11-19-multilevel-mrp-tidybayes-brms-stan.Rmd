@@ -313,18 +313,17 @@ bayes.mod %>%
 
 The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate^[Technically, we could calculate the standard error from the approximate model. However, it [may not be accurate](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer) and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to fitting the full Bayesian model in `brms`.]. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data^[Check out [this article](https://towardsdatascience.com/understanding-objective-functions-in-neural-networks-d217cb068138) for a nice discussion in the context of machine learning.].
 
-Let's fit this model to the Census data, and then do some model comparisons.
+Unlike the previous model which only make predicted values based on the point estimates from the regression, our full Bayesian model makes predictions for each iteration over the posterior. This allows us to poststratify the distribution of possible state-level support for gay marriage:
 
-```{r}
-# ps.bayes.mod <- Census %>%
-#   mutate(pred.support = predict(bayes.mod, newdata=.,
-#                                 allow_new_levels=TRUE)) %>%
-#   mutate(pred.support = pred.support * cpercent.state) %>%
-#   group_by(state) %>%
-#   summarise(state.support = sum(pred.support))
+```{r, cache.lazy = FALSE}
+ps.bayes.mod <- bayes.mod %>%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %>%
+  mutate(pred = pred * cpercent.state)
 
-bayes.mod %>%
-  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)
+ps.bayes.mod %>%
+  ggplot(aes(y=state, x=pred)) +
+  ggridges::geom_density_ridges(aes(height=..density..),
+                                rel_min_height = 0.01, stat = "density")
 ```
 
 
