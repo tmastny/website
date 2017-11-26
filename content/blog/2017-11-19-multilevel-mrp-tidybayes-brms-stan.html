@@ -186,10 +186,10 @@ plot_grid(disag.point, disag.scat)</code></pre>
 <li><p>No pooling: the assumption that each race has a completely independent opinion on gay marriage</p></li>
 <li><p>Complete pooling: The assumption that all races have the same opinion</p></li>
 </ol>
-<p>The model accomplishes this by allowing each group to have a varying intercept that is sampled from an estimated population distribution of varying intercepts. Our first model will be the maximam likelihood approximation to the full Bayesian model. This is the model Jonathan fits in the MRP Primer.</p>
+<p>The model accomplishes this by allowing each group to have a varying intercept that is sampled from an estimated population distribution of varying intercepts. Our first model will be the maximam likelihood approximation to the full Bayesian model. This is the model Jonathan fits in the MRP Primer, expect I’m removing <code>poll</code> because he doesn’t actually use it to predict opinion.</p>
 <pre class="r"><code>approx.mod &lt;- glmer(formula = yes.of.all ~ (1|race.female)
                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat)
-                    + (1|state) + (1|region) + (1|poll)
+                    + (1|state) + (1|region) + 
                     + p.relig + kerry.04,
                     data=marriage.data, family=binomial(link=&quot;logit&quot;))</code></pre>
 <pre class="r"><code>summary(approx.mod)</code></pre>
@@ -197,50 +197,71 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ##   Approximation) [glmerMod]
 ##  Family: binomial  ( logit )
 ## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) +  
-##     (1 | age.edu.cat) + (1 | state) + (1 | region) + (1 | poll) +  
-##     p.relig + kerry.04
+##     (1 | age.edu.cat) + (1 | state) + (1 | region) + +p.relig +  
+##     kerry.04
 ##    Data: marriage.data
 ## 
 ##      AIC      BIC   logLik deviance df.resid 
-##   7459.4   7527.0  -3719.7   7439.4     6331 
+##   7487.8   7548.6  -3734.9   7469.8     6332 
 ## 
 ## Scaled residuals: 
-##    Min     1Q Median     3Q    Max 
-## -2.166 -0.705 -0.477  0.981  3.884 
+##     Min      1Q  Median      3Q     Max 
+## -1.9534 -0.7108 -0.4848  0.9917  3.9206 
 ## 
 ## Random effects:
-##  Groups      Name        Variance Std.Dev.
-##  state       (Intercept) 0.001332 0.03649 
-##  age.edu.cat (Intercept) 0.007712 0.08782 
-##  race.female (Intercept) 0.054566 0.23359 
-##  poll        (Intercept) 0.042177 0.20537 
-##  region      (Intercept) 0.038087 0.19516 
-##  edu.cat     (Intercept) 0.129591 0.35999 
-##  age.cat     (Intercept) 0.306982 0.55406 
+##  Groups      Name        Variance  Std.Dev.
+##  state       (Intercept) 0.0003689 0.01921 
+##  age.edu.cat (Intercept) 0.0073012 0.08545 
+##  race.female (Intercept) 0.0508921 0.22559 
+##  region      (Intercept) 0.0379336 0.19477 
+##  edu.cat     (Intercept) 0.1341613 0.36628 
+##  age.cat     (Intercept) 0.2930770 0.54137 
 ## Number of obs: 6341, groups:  
-## state, 49; age.edu.cat, 16; race.female, 6; poll, 5; region, 5; edu.cat, 4; age.cat, 4
+## state, 49; age.edu.cat, 16; race.female, 6; region, 5; edu.cat, 4; age.cat, 4
 ## 
 ## Fixed effects:
 ##              Estimate Std. Error z value Pr(&gt;|z|)   
-## (Intercept) -1.406573   0.541074  -2.600  0.00933 **
-## p.relig     -0.015250   0.004990  -3.056  0.00224 **
-## kerry.04     0.018258   0.006922   2.638  0.00835 **
+## (Intercept) -1.477570   0.525617  -2.811  0.00494 **
+## p.relig     -0.014754   0.004932  -2.992  0.00277 **
+## kerry.04     0.018777   0.006798   2.762  0.00575 **
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## Correlation of Fixed Effects:
 ##          (Intr) p.relg
-## p.relig  -0.543       
-## kerry.04 -0.716  0.653
-## convergence code: 0
-## Model failed to converge with max|grad| = 0.00102765 (tol = 0.001, component 1)</code></pre>
-<p>Using the <a href="https://github.com/tidyverse/broom"><code>broom</code></a> package, we can extract the regression coefficients into a tidy dataframe</p>
-<p>First, note that I didn’t include the standard error from the MLE method. In general, this is <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">hard to do</a>, but we get the percentile intervals for free with using <code>brms</code>.</p>
+## p.relig  -0.549       
+## kerry.04 -0.726  0.652</code></pre>
+<p>Jonathan manually builds the inverse link function and applies it to every row of the Census data to calculate the estimated state opinion on the state level taking into account each demographic group. I’ll take a different approach here.</p>
+<p>The <code>lme4</code> package provides a method <code>predict</code> to easily make predictions on new data. This is a generic implementation of rebuilding the link function based off of regression coefficients. And if we apply <code>predict</code> to the Census data<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>, we can also make estimates for groups not sampled in the survey, such as the missing black men in South Dakota we noted above, by applying the estimated black men opinion and the overall state opinion.</p>
+<p>Moreover, we can also address other problems in the survey. For example,</p>
+<pre class="r"><code>marriage.data %&gt;%
+  filter(state == &quot;AK&quot;, state == &quot;HI&quot;)</code></pre>
+<pre><code>##  [1] state                  p.evang                p.mormon              
+##  [4] kerry.04               poll                   poll.firm             
+##  [7] poll.year              id                     statenum              
+## [10] statename              region.cat             female                
+## [13] race.wbh               edu.cat                age.cat               
+## [16] age.cat6               age.edu.cat6           educ                  
+## [19] age                    democrat               republican            
+## [22] black                  hispanic               weight                
+## [25] yes.of.opinion.holders yes.of.all             state.initnum         
+## [28] region                 no.of.all              no.of.opinion.holders 
+## [31] race.female            age.edu.cat            p.relig               
+## &lt;0 rows&gt; (or 0-length row.names)</code></pre>
+<p>no one from Alaska and Hawaii were included in the survey. But by applying the <code>predict</code> function to the Census, not only can we estimate the opinion by applying the overall state average, but we can also break down the opinion by the percentages of demographic groups within Alaska and Hawaii. This gives a more robust state estimate, and allows for poststratification.</p>
+<pre class="r"><code>ps.approx.mod &lt;- Census %&gt;%
+  mutate(pred.support = predict(approx.mod, newdata=., 
+                                allow.new.levels=TRUE, type=&#39;response&#39;)) %&gt;%
+  mutate(pred.support = pred.support * cpercent.state) %&gt;%
+  group_by(state) %&gt;%
+  summarise(state.support = sum(pred.support))</code></pre>
+<p>We’ll investigate this model further after we build the full Bayesian model.</p>
 </div>
 <div id="model-3-full-bayesian-model" class="section level2">
 <h2>Model 3: Full Bayesian Model</h2>
+<p>I am going to fit the full Bayesian modeling using the Stan interface <code>brms</code>. The model specification will be the same as the approximate model in the previous section, except for some weakly informative priors on the standard deviations of the varying intercepts useful for convergence.</p>
 <pre class="r"><code>bayes.mod &lt;- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
-                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+                 + (1|age.edu.cat) + (1|state) + (1|region)
                  + p.relig + kerry.04,
                  data=marriage.data, family=bernoulli(),
                  prior=c(set_prior(&quot;normal(0,0.2)&quot;, class=&#39;b&#39;),
@@ -249,12 +270,11 @@ plot_grid(disag.point, disag.scat)</code></pre>
                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;edu.cat&quot;),
                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;age.edu.cat&quot;),
                          set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;state&quot;),
-                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;),
-                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;poll&quot;)))</code></pre>
+                         set_prior(&quot;normal(0,0.2)&quot;, class=&#39;sd&#39;, group=&quot;region&quot;)))</code></pre>
 <pre class="r"><code>summary(bayes.mod)</code></pre>
 <pre><code>##  Family: bernoulli 
 ##   Links: mu = logit 
-## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) + (1 | age.edu.cat) + (1 | state) + (1 | region) + (1 | poll) + p.relig + kerry.04 
+## Formula: yes.of.all ~ (1 | race.female) + (1 | age.cat) + (1 | edu.cat) + (1 | age.edu.cat) + (1 | state) + (1 | region) + p.relig + kerry.04 
 ##    Data: marriage.data (Number of observations: 6341) 
 ## Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 ##          total post-warmup samples = 4000
@@ -263,41 +283,55 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## Group-Level Effects: 
 ## ~age.cat (Number of levels: 4) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.42      0.10     0.26     0.63       4000 1.00
+## sd(Intercept)     0.41      0.09     0.26     0.62       4000 1.00
 ## 
 ## ~age.edu.cat (Number of levels: 16) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.10      0.06     0.01     0.24       1536 1.00
+## sd(Intercept)     0.10      0.06     0.01     0.25       1433 1.00
 ## 
 ## ~edu.cat (Number of levels: 4) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.31      0.09     0.16     0.53       4000 1.00
-## 
-## ~poll (Number of levels: 5) 
-##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.22      0.08     0.11     0.41       2485 1.00
+## sd(Intercept)     0.32      0.09     0.18     0.52       4000 1.00
 ## 
 ## ~race.female (Number of levels: 6) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.24      0.07     0.12     0.42       2939 1.00
+## sd(Intercept)     0.23      0.08     0.12     0.41       4000 1.00
 ## 
 ## ~region (Number of levels: 5) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.22      0.09     0.09     0.43       3089 1.00
+## sd(Intercept)     0.22      0.09     0.09     0.42       4000 1.00
 ## 
 ## ~state (Number of levels: 49) 
 ##               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## sd(Intercept)     0.07      0.04     0.00     0.16       1507 1.00
+## sd(Intercept)     0.06      0.04     0.00     0.15       1626 1.00
 ## 
 ## Population-Level Effects: 
 ##           Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-## Intercept    -1.42      0.53    -2.47    -0.39       2652 1.00
-## p.relig      -0.02      0.01    -0.03    -0.01       4000 1.00
+## Intercept    -1.48      0.52    -2.50    -0.47       4000 1.00
+## p.relig      -0.01      0.01    -0.02    -0.00       4000 1.00
 ## kerry.04      0.02      0.01     0.00     0.03       4000 1.00
 ## 
 ## Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 ## is a crude measure of effective sample size, and Rhat is the potential 
 ## scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
+<p>So what does this full Bayesian model give us that the approximate model lacks? The most obvious is a total accounting of the uncertainty inherent in the model. For example, let’s take a look at the standard deviation of group-level intercepts:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
+<pre class="r"><code># bayes_sd &lt;- bayes.mod %&gt;%
+#   gather_samples(`sd_.*`, regex=TRUE) %&gt;%
+#   mutate(term = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) %&gt;%
+#   ggplot(aes(y=term, x = ))
+# 
+# approx_sd &lt;- broom::tidy(individual.model) %&gt;%
+#   filter(stringr::str_detect(term, &quot;sd_&quot;))
+# 
+# bayes_sd %&gt;%
+#   inner_join(approx_sd, by=c(&quot;term&quot;=&quot;group&quot;)) %&gt;%
+#   ggplot(aes(y = term, x = estimate.x)) +
+#   geom_point(position = position_nudge(y = 0.1)) +
+#   geom_segment(aes(x=conf.low, xend=conf.high, yend=term), 
+#              position = position_nudge(y = 0.1)) + 
+#   geom_point(aes(x=estimate.y))</code></pre>
+<p>The <code>brms</code> model specification and package methods are initially based off of <code>lme4</code>, the package I used to fit the previous model. Therefore, we could build the predicted data the say way in the previous section.</p>
+<p>Instead, I’ll continue to use <code>tidybayes</code>.</p>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
@@ -306,5 +340,7 @@ plot_grid(disag.point, disag.scat)</code></pre>
 <hr />
 <ol>
 <li id="fn1"><p>The idea for this plot comes from Matt Vuorre, who called them <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a> in his blog post. Austin Rochford also uses a similar chart in his MRP Prime walkthrough. And I am using the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> state <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">abbreviation</a> labels instead of points as Gelman recommends.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>By design the Census provides every combination of demographic groups within each state. If that wasn’t the case, I would enter in each unique demographic and state factor into <a href="https://github.com/tidyverse/modelr"><code>modelr</code></a><code>::data_grid</code>, which would automiatcally generate every possible combination of results. This is a very useful tool.<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>Technically, we could calculate the standard error from the approximate model. However, it may not <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">be accurate</a> and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to just fitting the entire model in <code>brms</code>.<a href="#fnref3">↩</a></p></li>
 </ol>
 </div>

@@ -233,28 +233,36 @@ summary(approx.mod)
 
 Jonathan manually builds the inverse link function and applies it to every row of the Census data to calculate the estimated state opinion on the state level taking into account each demographic group. I'll take a different approach here.
 
-The `lme4` package provides a method `predict` to easily make predictions on new data. This is a generic implementation of rebuilding the link function based off of regression coefficients. ^[Here, the Census by design provides every combination of demographic groups within each state. If that wasn't the case, I would use [`modelr](https://github.com/tidyverse/modelr)::data_grid` to generate all combninations of a given data set.]
+The `lme4` package provides a method `predict` to easily make predictions on new data. This is a generic implementation of rebuilding the link function based off of regression coefficients. And if we apply `predict` to the Census data^[By design the Census provides every combination of demographic groups within each state. If that wasn't the case, I would enter in each unique demographic and state factor into [`modelr`](https://github.com/tidyverse/modelr)`::data_grid`, which would automiatcally generate every possible combination of results. This is a very useful tool.], we can also make estimates for groups not sampled in the survey, such as the missing black men in South Dakota we noted above, by applying the estimated black men opinion and the overall state opinion. 
 
-Moreover, we can ues this opportunity to directly specify the new data. Unlike the empirical averages, our model can estimate the level of opinion for any subgroup within any state. So we want to predict based on data that has every subgroup combination for every state. The Census data already provides this, but here I want to highlight a more general tool we can use to generate all combinations of data. We can do this quickly with the `modelr` package:
+Moreover, we can also address other problems in the survey. For example,
 
 ```{r}
-state_preds <- predict(approx.mod, newdata=Census, allow.new.levels=TRUE,
-                       type='response')
+marriage.data %>%
+  filter(state == "AK", state == "HI")
 ```
 
-Since these new values were estimated from the Census data, we now have decent estimates for Alaska and Hawaii even though the survey had no respondents from those states. To build those estimations, the model used the population level state intercept, but was able to use the demographic information within the states to estimate the level of support of all the groups within Alaska and Hawaii, which will be necessary for poststratification. 
+no one from Alaska and Hawaii were included in the survey. But by applying the `predict` function to the Census, not only can we estimate the opinion by applying the overall state average, but we can also break down the opinion by the percentages of demographic groups within Alaska and Hawaii. This gives a more robust state estimate, and allows for poststratification.
 
+```{r}
+ps.approx.mod <- Census %>%
+  mutate(pred.support = predict(approx.mod, newdata=., 
+                                allow.new.levels=TRUE, type='response')) %>%
+  mutate(pred.support = pred.support * cpercent.state) %>%
+  group_by(state) %>%
+  summarise(state.support = sum(pred.support))
+```
 
-Using the [`broom`](https://github.com/tidyverse/broom) package, we can extract the regression coefficients into a tidy dataframe
+We'll investigate this model further after we build the full Bayesian model. 
 
-
-First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
 
 ## Model 3: Full Bayesian Model
 
+I am going to fit the full Bayesian modeling using the Stan interface `brms`. The model specification will be the same as the approximate model in the previous section, except for some weakly informative priors on the standard deviations of the varying intercepts useful for convergence. 
+
 ```{r, results='hide'}
 bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
-                 + (1|age.edu.cat) + (1|state) + (1|region) + (1|poll)
+                 + (1|age.edu.cat) + (1|state) + (1|region)
                  + p.relig + kerry.04,
                  data=marriage.data, family=bernoulli(),
                  prior=c(set_prior("normal(0,0.2)", class='b'),
@@ -263,13 +271,36 @@ bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
                          set_prior("normal(0,0.2)", class='sd', group="edu.cat"),
                          set_prior("normal(0,0.2)", class='sd', group="age.edu.cat"),
                          set_prior("normal(0,0.2)", class='sd', group="state"),
-                         set_prior("normal(0,0.2)", class='sd', group="region"),
-                         set_prior("normal(0,0.2)", class='sd', group="poll")))
+                         set_prior("normal(0,0.2)", class='sd', group="region")))
 ```
 ```{r}
 summary(bayes.mod)
 ```
 
+So what does this full Bayesian model give us that the approximate model lacks? The most obvious is a total accounting of the uncertainty inherent in the model. For example, let's take a look at the standard deviation of group-level intercepts:^[Technically, we could calculate the standard error from the approximate model. However, it may not [be accurate](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer) and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to just fitting the entire model in `brms`.]
+
+```{r}
+bayes_sd <- bayes.mod %>%
+  gather_samples(`sd_.*`, regex=TRUE) %>%
+  mutate(term = stringr::str_replace_all(term, c("sd_" = "","__Intercept"=""))) %>%
+  ggplot(aes(y=term, x = ))
+
+approx_sd <- broom::tidy(individual.model) %>%
+  filter(stringr::str_detect(term, "sd_"))
+
+bayes_sd %>%
+  inner_join(approx_sd, by=c("term"="group")) %>%
+  ggplot(aes(y = term, x = estimate.x)) +
+  geom_point(position = position_nudge(y = 0.1)) +
+  geom_segment(aes(x=conf.low, xend=conf.high, yend=term),
+             position = position_nudge(y = 0.1)) +
+  geom_point(aes(x=estimate.y))
+```
+
+
+The `brms` model specification and package methods are initially based off of `lme4`, the package I used to fit the previous model. Therefore, we could build the predicted data the say way in the previous section.
+
+Instead, I'll continue to use `tidybayes`. 
 
 
 
