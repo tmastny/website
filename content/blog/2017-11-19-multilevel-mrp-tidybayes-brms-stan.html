@@ -131,14 +131,29 @@ Census &lt;- Census %&gt;%
   directlabels::geom_dl(aes(label=model), method=&#39;smart.grid&#39;) +
   ylab(&#39;state&#39;)
 
+# we&#39;ll be using this one a lot, so let&#39;s make it a function
+compare_scat &lt;- function(d) {
+  return(
+    ggplot(data=d, aes(x = support, y=support1)) +
+    geom_text(aes(label=state), hjust=0.5, vjust=0.25) +
+    geom_abline(slope = 1, intercept = 0) +
+    xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
+    xlab(&quot;support&quot;) + ylab(&quot;poststrat support&quot;) +
+    coord_fixed()
+  )
+}
+
 disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
-  filter(state != &quot;&quot;) %&gt;%
-  ggplot(aes(x = support, y=support1)) + 
-  geom_text(aes(label=state), hjust=0.5, vjust=0.25) +
-  geom_abline(slope = 1, intercept = 0) +
-  xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
-  xlab(&quot;support&quot;) + ylab(&quot;poststrat support&quot;) +
-  coord_fixed()
+  compare_scat()
+
+# disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
+#   filter(state != &quot;&quot;) %&gt;%
+#   ggplot(aes(x = support, y=support1)) + 
+#   geom_text(aes(label=state), hjust=0.5, vjust=0.25) +
+#   geom_abline(slope = 1, intercept = 0) +
+#   xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
+#   xlab(&quot;support&quot;) + ylab(&quot;poststrat support&quot;) +
+#   coord_fixed()
 
 plot_grid(disag.point, disag.scat)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
@@ -331,8 +346,36 @@ bayes.mod %&gt;%
   geom_point(data=approx_sd)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 <p>The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
-<p>The <code>brms</code> model specification and package methods are initially based off of <code>lme4</code>, the package I used to fit the previous model. Therefore, we could build the predicted data the say way in the previous section.</p>
-<p>Instead, I’ll continue to use <code>tidybayes</code>.</p>
+<p>Let’s fit this model to the Census data, and then do some model comparisons.</p>
+<pre class="r"><code># ps.bayes.mod &lt;- Census %&gt;%
+#   mutate(pred.support = predict(bayes.mod, newdata=.,
+#                                 allow_new_levels=TRUE)) %&gt;%
+#   mutate(pred.support = pred.support * cpercent.state) %&gt;%
+#   group_by(state) %&gt;%
+#   summarise(state.support = sum(pred.support))
+
+bayes.mod %&gt;%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)</code></pre>
+<pre><code>## # A tibble: 19,584,000 x 19
+## # Groups:   state, p.evang, p.mormon, kerry.04, crace.WBH, age.cat,
+## #   edu.cat, cfemale, .freq, cfreq.state, cpercent.state, region,
+## #   race.female, age.edu.cat, p.relig, .row [4,896]
+##    state p.evang p.mormon kerry.04 crace.WBH age.cat edu.cat cfemale .freq
+##    &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;int&gt;   &lt;int&gt;   &lt;int&gt;   &lt;int&gt; &lt;int&gt;
+##  1    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  2    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  3    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  4    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  5    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  6    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  7    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  8    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  9    AK   12.44 3.003126     35.5         1       1       1       0   467
+## 10    AK   12.44 3.003126     35.5         1       1       1       0   467
+## # ... with 19,583,990 more rows, and 10 more variables: cfreq.state &lt;dbl&gt;,
+## #   cpercent.state &lt;dbl&gt;, region &lt;chr&gt;, race.female &lt;dbl&gt;,
+## #   age.edu.cat &lt;dbl&gt;, p.relig &lt;dbl&gt;, .row &lt;int&gt;, .chain &lt;dbl&gt;,
+## #   .iteration &lt;int&gt;, pred &lt;int&gt;</code></pre>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
