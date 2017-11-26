@@ -314,12 +314,28 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 ## is a crude measure of effective sample size, and Rhat is the potential 
 ## scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
-<p>So what does this full Bayesian model give us that the approximate model lacks? The most obvious is a total accounting of the uncertainty inherent in the model. For example, let’s take a look at the standard deviation of group-level intercepts:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
-<pre class="r"><code># bayes_sd &lt;- bayes.mod %&gt;%
-#   gather_samples(`sd_.*`, regex=TRUE) %&gt;%
-#   mutate(term = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) %&gt;%
-#   ggplot(aes(y=term, x = ))
-# 
+<p>So what does this full Bayesian model give us that the approximate model lacks? The most obvious benefit is the total accounting of uncertainty in the model. For example, let’s take a look at the standard deviation of group-level intercepts:<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a></p>
+<pre class="r"><code>library(tidybayes)
+bayes.mod %&gt;%
+  gather_samples(`sd_.*`, regex=TRUE) %&gt;%
+  ungroup() %&gt;%
+  mutate(term = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) #%&gt;%</code></pre>
+<pre><code>## # A tibble: 24,000 x 4
+##    .chain .iteration    term  estimate
+##     &lt;int&gt;      &lt;int&gt;   &lt;chr&gt;     &lt;dbl&gt;
+##  1      1          1 age.cat 0.4941504
+##  2      1          2 age.cat 0.4956136
+##  3      1          3 age.cat 0.4198985
+##  4      1          4 age.cat 0.4455469
+##  5      1          5 age.cat 0.5649371
+##  6      1          6 age.cat 0.4593680
+##  7      1          7 age.cat 0.3758013
+##  8      1          8 age.cat 0.2609281
+##  9      1          9 age.cat 0.2980093
+## 10      1         10 age.cat 0.5157589
+## # ... with 23,990 more rows</code></pre>
+<pre class="r"><code>  # ggplot(aes(y=term, x = ))
+
 # approx_sd &lt;- broom::tidy(individual.model) %&gt;%
 #   filter(stringr::str_detect(term, &quot;sd_&quot;))
 # 
@@ -327,8 +343,8 @@ plot_grid(disag.point, disag.scat)</code></pre>
 #   inner_join(approx_sd, by=c(&quot;term&quot;=&quot;group&quot;)) %&gt;%
 #   ggplot(aes(y = term, x = estimate.x)) +
 #   geom_point(position = position_nudge(y = 0.1)) +
-#   geom_segment(aes(x=conf.low, xend=conf.high, yend=term), 
-#              position = position_nudge(y = 0.1)) + 
+#   geom_segment(aes(x=conf.low, xend=conf.high, yend=term),
+#              position = position_nudge(y = 0.1)) +
 #   geom_point(aes(x=estimate.y))</code></pre>
 <p>The <code>brms</code> model specification and package methods are initially based off of <code>lme4</code>, the package I used to fit the previous model. Therefore, we could build the predicted data the say way in the previous section.</p>
 <p>Instead, I’ll continue to use <code>tidybayes</code>.</p>
