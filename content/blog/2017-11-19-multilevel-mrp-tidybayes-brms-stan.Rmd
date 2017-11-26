@@ -277,7 +277,7 @@ bayes.mod <- brm(yes.of.all ~ (1|race.female) + (1|age.cat) + (1|edu.cat)
 summary(bayes.mod)
 ```
 
-So what does this full Bayesian model give us that the approximate model lacks? The most obvious benefit is the total accounting of uncertainty in the model. For example, let's take a look at the standard deviation of group-level intercepts:
+So what are the advantages to the full Bayesian model? The most obvious benefit is the total accounting of uncertainty in the model. For example, let's take a look at the standard deviation of group-level intercepts:
 
 ```{r}
 library(tidybayes)
@@ -296,7 +296,7 @@ bayes.mod %>%
   geom_point(data=approx_sd)
 ```
 
-The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate^[Technically, we could calculate the standard error from the approximate model. However, it [may not be accurate](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer) and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to just fitting the entire model in brms]. Moreover, that point estimate does not necessarily reflect the peak of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data^[Check out [this article](https://towardsdatascience.com/understanding-objective-functions-in-neural-networks-d217cb068138) for a nice discussion in the context of machine learning.].
+The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate^[Technically, we could calculate the standard error from the approximate model. However, it [may not be accurate](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer) and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to fitting the full Bayesian model in `brms`.]. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data^[Check out [this article](https://towardsdatascience.com/understanding-objective-functions-in-neural-networks-d217cb068138) for a nice discussion in the context of machine learning.].
 
 The `brms` model specification and package methods are initially based off of `lme4`, the package I used to fit the previous model. Therefore, we could build the predicted data the say way in the previous section.
 
