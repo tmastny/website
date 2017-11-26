@@ -291,7 +291,8 @@ bayes.mod %>%
   mutate(group = stringr::str_replace_all(term, c("sd_" = "","__Intercept"=""))) %>%
   ggplot(aes(y=group, x = estimate)) + 
   ggridges::geom_density_ridges(aes(height=..density..),
-                                rel_min_height = 0.01, stat = "density") + 
+                                rel_min_height = 0.01, stat = "density",
+                                scale=1.5) + 
   geom_point(data=approx_sd)
 
 # approx_sd <- broom::tidy(individual.model) %>%

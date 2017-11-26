@@ -326,7 +326,8 @@ bayes.mod %&gt;%
   mutate(group = stringr::str_replace_all(term, c(&quot;sd_&quot; = &quot;&quot;,&quot;__Intercept&quot;=&quot;&quot;))) %&gt;%
   ggplot(aes(y=group, x = estimate)) + 
   ggridges::geom_density_ridges(aes(height=..density..),
-                                rel_min_height = 0.01, stat = &quot;density&quot;) + 
+                                rel_min_height = 0.01, stat = &quot;density&quot;,
+                                scale=1.5) + 
   geom_point(data=approx_sd)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 <pre class="r"><code># approx_sd &lt;- broom::tidy(individual.model) %&gt;%
