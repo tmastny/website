@@ -179,8 +179,9 @@ plot_grid(disag.point, disag.scat)</code></pre>
 </div>
 <div id="model-2-maximum-likelihood-multilevel-model" class="section level2">
 <h2>Model 2: Maximum Likelihood Multilevel Model</h2>
-<p>In our disaggrated model, we took the empirical averages for each demographic group. That is</p>
-<p>The next model is our first multilevel regression. The key idea behind the multilevel model<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> is that the level of support for gay marriage among, for example, races is partially pooled with information from other races. Multilevel regression is a compromise between two extremes:</p>
+<p>In our disaggrated model, we took the empirical averages for each demographic group sampled in the survey. Within many states, however, not every demographic group was sampled. As described in the previous section, we’d like a way to infer missing demographic groups within each state using the support for the group outside of the state.</p>
+<p>The straightforward way to estimate state and demographic group opinions is a regression model, where every factor of a category (states, races, etc.) is allowed to have a unique intercept. In particular, we are going to work with a multilevel regression model. I think that <a href="https://cran.r-project.org/web/packages/rstanarm/vignettes/pooling.html">this introduction</a> by the Stan team is a great starting point.</p>
+<p>The key idea behind the multilevel model is that the level of support for gay marriage among races, for example, is partially pooled with information from other races. Multilevel regression is a compromise between two extremes:</p>
 <ol style="list-style-type: decimal">
 <li><p>No pooling: the assumption that each race has a completely independent opinion on gay marriage</p></li>
 <li><p>Complete pooling: The assumption that all races have the same opinion</p></li>
@@ -233,6 +234,7 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## kerry.04 -0.716  0.653
 ## convergence code: 0
 ## Model failed to converge with max|grad| = 0.00102765 (tol = 0.001, component 1)</code></pre>
+<p>Using the <a href="https://github.com/tidyverse/broom"><code>broom</code></a> package, we can extract the regression coefficients into a tidy dataframe</p>
 <p>First, note that I didn’t include the standard error from the MLE method. In general, this is <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">hard to do</a>, but we get the percentile intervals for free with using <code>brms</code>.</p>
 </div>
 <div id="model-3-full-bayesian-model" class="section level2">
@@ -304,6 +306,5 @@ plot_grid(disag.point, disag.scat)</code></pre>
 <hr />
 <ol>
 <li id="fn1"><p>The idea for this plot comes from Matt Vuorre, who called them <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a> in his blog post. Austin Rochford also uses a similar chart in his MRP Prime walkthrough. And I am using the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> state <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">abbreviation</a> labels instead of points as Gelman recommends.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p><a href="https://cran.r-project.org/web/packages/rstanarm/vignettes/pooling.html">Here</a> is a good introduction with <code>rstanarm</code>.<a href="#fnref2">↩</a></p></li>
 </ol>
 </div>

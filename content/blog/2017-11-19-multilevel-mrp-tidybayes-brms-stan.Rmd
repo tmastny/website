@@ -208,26 +208,45 @@ However, we do have the responses from black men from neighboring states and all
 
 ## Model 2: Maximum Likelihood Multilevel Model
 
-In our disaggrated model, we took the empirical averages for each demographic group. That is 
+In our disaggrated model, we took the empirical averages for each demographic group sampled in the survey. Within many states, however, not every demographic group was sampled. As described in the previous section, we'd like a way to infer missing demographic groups within each state using the support for the group outside of the state. 
 
-The next model is our first multilevel regression. The key idea behind the multilevel model^[[Here](https://cran.r-project.org/web/packages/rstanarm/vignettes/pooling.html) is a good introduction with `rstanarm`.] is that the level of support for gay marriage among, for example, races is partially pooled with information from other races. Multilevel regression is a compromise between two extremes: 
+The straightforward way to estimate state and demographic group opinions is a regression model, where every factor of a category (states, races, etc.) is allowed to have a unique intercept. In particular, we are going to work with a multilevel regression model. I think that [this introduction](https://cran.r-project.org/web/packages/rstanarm/vignettes/pooling.html) by the Stan team is a great starting point.
+
+The key idea behind the multilevel model is that the level of support for gay marriage among races, for example, is partially pooled with information from other races. Multilevel regression is a compromise between two extremes: 
 
 1. No pooling: the assumption that each race has a completely independent opinion on gay marriage
 
 2. Complete pooling: The assumption that all races have the same opinion
 
-The model accomplishes this by allowing each group to have a varying intercept that is sampled from an estimated population distribution of varying intercepts. Our first model will be the maximam likelihood approximation to the full Bayesian model. This is the model Jonathan fits in the MRP Primer.
+The model accomplishes this by allowing each group to have a varying intercept that is sampled from an estimated population distribution of varying intercepts. Our first model will be the maximam likelihood approximation to the full Bayesian model. This is the model Jonathan fits in the MRP Primer, expect I'm removing `poll` because he doesn't actually use it to predict opinion.
 
 ```{r}
 approx.mod <- glmer(formula = yes.of.all ~ (1|race.female)
                     + (1|age.cat) + (1|edu.cat) + (1|age.edu.cat)
-                    + (1|state) + (1|region) + (1|poll)
+                    + (1|state) + (1|region) + 
                     + p.relig + kerry.04,
                     data=marriage.data, family=binomial(link="logit"))
 ```
 ```{r}
 summary(approx.mod)
 ```
+
+Jonathan manually builds the inverse link function and applies it to every row of the Census data to calculate the estimated state opinion on the state level taking into account each demographic group. I'll take a different approach here.
+
+The `lme4` package provides a method `predict` to easily make predictions on new data. This is a generic implementation of rebuilding the link function based off of regression coefficients. ^[Here, the Census by design provides every combination of demographic groups within each state. If that wasn't the case, I would use [`modelr](https://github.com/tidyverse/modelr)::data_grid` to generate all combninations of a given data set.]
+
+Moreover, we can ues this opportunity to directly specify the new data. Unlike the empirical averages, our model can estimate the level of opinion for any subgroup within any state. So we want to predict based on data that has every subgroup combination for every state. The Census data already provides this, but here I want to highlight a more general tool we can use to generate all combinations of data. We can do this quickly with the `modelr` package:
+
+```{r}
+state_preds <- predict(approx.mod, newdata=Census, allow.new.levels=TRUE,
+                       type='response')
+```
+
+Since these new values were estimated from the Census data, we now have decent estimates for Alaska and Hawaii even though the survey had no respondents from those states. To build those estimations, the model used the population level state intercept, but was able to use the demographic information within the states to estimate the level of support of all the groups within Alaska and Hawaii, which will be necessary for poststratification. 
+
+
+Using the [`broom`](https://github.com/tidyverse/broom) package, we can extract the regression coefficients into a tidy dataframe
+
 
 First, note that I didn't include the standard error from the MLE method. In general, this is [hard to do](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer), but we get the percentile intervals for free with using `brms`. 
 

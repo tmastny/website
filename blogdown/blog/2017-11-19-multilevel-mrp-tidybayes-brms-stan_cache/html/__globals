@@ -14,5 +14,5 @@ unnamed-chunk-13	approx.mod	glmer	yes.of.all	race.female	age.cat	edu.cat	age.edu
 unnamed-chunk-14	summary	approx.mod
 unnamed-chunk-15	bayes.mod	brm	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	poll	p.relig	kerry.04	marriage.data	bernoulli	c	set_prior
 unnamed-chunk-16	summary	bayes.mod
-unnamed-chunk-17	bayes.mod	brm	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	poll	p.relig	kerry.04	marriage.data	bernoulli	c	set_prior
+unnamed-chunk-17	summary	bayes.mod
 unnamed-chunk-18	summary	bayes.mod

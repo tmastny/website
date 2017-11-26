@@ -76,15 +76,13 @@ Census</code></pre>
 <p>to the overall population mean shown above.</p>
 <p>How then do we estimate the overall population mean based on <code>poll_data</code>? We need a correction based on our Census data, knowing that each mean represents only a certain percentage of the population. This process is known as poststratification.</p>
 <p>Let <span class="math inline">\(X_a = x_{a1}, x_{a2}, \dots, x_{a25}\)</span> and <span class="math inline">\(X_b = x_{b1}, x_{b2}, \dots, x_{b50}\)</span> be the data indicating support for each demographic. Then using <span class="math inline">\(\bar{X}\)</span>, we have</p>
-<p><span class="math display">\[x + 4 \\ x + 5 \]</span> <span class="math display">\[ 
-\begin{align*}
+<span class="math display">\[\begin{align*}
 \bar{X} &amp;= \frac{1}{75}\sum_{i=1}^{75}x_i \\
 &amp;= \frac{1}{75}\left( \sum_{i=1}^{25}x_{ai} + \sum_{i=1}^{75}x_{bi} \right) \\
 &amp;= \frac{1}{75}\left(\frac{25}{25} \sum_{i=1}^{25}x_{ai} + \frac{50}{50}\sum_{i=1}^{75}x_{bi} \right) \\
 &amp;= \frac{1}{75} \left( 25 \bar{X}_a + 50 \bar{X}_b \right) \\
 &amp;= \frac{25}{75}\bar{X}_a + \frac{50}{75} \bar{X}_b
-\end{align*}
-\]</span></p>
+\end{align*}\]</span>
 <p>Then assuming the samples from <code>poll_data</code> are random samples within each demographic group, the expected value of the sample mean should equal <span class="math inline">\(\bar{X}_a\)</span> and <span class="math inline">\(\bar{X}_b\)</span>:</p>
 <pre class="r"><code>group_support &lt;- poll_data %&gt;%
   group_by(group) %&gt;%
