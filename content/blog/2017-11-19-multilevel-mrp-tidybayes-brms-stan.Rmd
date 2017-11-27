@@ -77,7 +77,8 @@ marriage.data <- Statelevel %>%
 marriage.data <- marriage.data %>%
   mutate(race.female = (female * 3) + race.wbh) %>%
   mutate(age.edu.cat = 4 * (age.cat - 1) + edu.cat) %>%
-  mutate(p.relig = p.evang + p.mormon)
+  mutate(p.relig = p.evang + p.mormon) %>%
+  filter(state != "")
 ```
 
 ### Tidying Poststratification
@@ -100,13 +101,6 @@ Census <- Census %>%
   mutate(race.female = (cfemale * 3 ) + crace.WBH) %>%
   mutate(age.edu.cat = 4 * (age.cat - 1) + edu.cat) %>%
   mutate(p.relig = p.evang + p.mormon)
-```
-
-Then we can just include the Census rates as a column in the gay marriage poll data.
-
-```{r}
-# marriage.data <- Census %>%
-#   select(state, kerry.04, race.female, age.edu.cat)
 ```
 
 
@@ -156,7 +150,6 @@ Here's the difference between poststratified and the empricial means:
 disag.point <- bind_rows(mod.disag, mod.disag.ps) %>%
   group_by(model) %>%
   arrange(support, .by_group=TRUE) %>%
-  filter(state != "") %>%
   ggplot(aes(x = support, y=forcats::fct_inorder(state), color=model)) + 
   geom_point() + 
   theme_classic() + theme(legend.position = 'none') +  
@@ -175,18 +168,7 @@ compare_scat <- function(d) {
   )
 }
 
-disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
-  compare_scat()
-
-# disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>%
-#   filter(state != "") %>%
-#   ggplot(aes(x = support, y=support1)) + 
-#   geom_text(aes(label=state), hjust=0.5, vjust=0.25) +
-#   geom_abline(slope = 1, intercept = 0) +
-#   xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
-#   xlab("support") + ylab("poststrat support") +
-#   coord_fixed()
-
+disag.scat <- bind_cols(mod.disag, mod.disag.ps) %>% compare_scat()
 plot_grid(disag.point, disag.scat)
 ```
 
@@ -261,11 +243,11 @@ no one from Alaska and Hawaii were included in the survey. But by applying the `
 
 ```{r}
 ps.approx.mod <- Census %>%
-  mutate(pred.support = predict(approx.mod, newdata=., 
+  mutate(support = predict(approx.mod, newdata=., 
                                 allow.new.levels=TRUE, type='response')) %>%
-  mutate(pred.support = pred.support * cpercent.state) %>%
+  mutate(support = support * cpercent.state) %>%
   group_by(state) %>%
-  summarise(state.support = sum(pred.support))
+  summarise(support = sum(support))
 ```
 
 We'll investigate this model further after we build the full Bayesian model. 
@@ -316,17 +298,35 @@ The Bayesian model provides a distribution of all possible standard deviations t
 Unlike the previous model which only make predicted values based on the point estimates from the regression, our full Bayesian model makes predictions for each iteration over the posterior. This allows us to poststratify the distribution of possible state-level support for gay marriage:
 
 ```{r, cache.lazy = FALSE}
-ps.bayes.mod <- bayes.mod %>%
-  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)
-
+bayes.pred <- bayes.mod %>%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %>%
+  rename(support = pred)
+  
+ps.bayes.mod <- bayes.pred %>%
+  mutate(support = support * cpercent.state) %>%
+  group_by(state) %>%
+  summarise(support = sum(support))
+ps.bayes.mod
 ps.bayes.mod %>%
-  ggplot(aes(y=state, x=pred)) +
+  ggplot(aes(y=state, x=support)) +
   ggridges::geom_density_ridges(aes(height=..density..),
                                 rel_min_height = 0.01, stat = "density")
 ```
 
 
 ## Model Comparisons
+
+
+```{r}
+mod.disag[nrow(mod.disag) + 1,] = list("AK", mean(mod.disag$support), "no_ps")
+mod.disag[nrow(mod.disag) + 1,] = list("HI", mean(mod.disag$support), "no_ps")
+
+disag.approx <- bind_cols(mod.disag, ps.approx.mod) %>% compare_scat()
+disag.bayes <- bind_cols(mod.disag, ps.bayes.mod) %>% compare_scat()
+approx.bayes <- bind_cols(ps.approx.mod, ps.bayes.mod) %>% compare_scat()
+
+plot_grid(disag.approx, disag.bayes, approx.bayes)
+```
 
 
 

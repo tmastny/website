@@ -72,7 +72,8 @@ marriage.data &lt;- Statelevel %&gt;%
 marriage.data &lt;- marriage.data %&gt;%
   mutate(race.female = (female * 3) + race.wbh) %&gt;%
   mutate(age.edu.cat = 4 * (age.cat - 1) + edu.cat) %&gt;%
-  mutate(p.relig = p.evang + p.mormon)</code></pre>
+  mutate(p.relig = p.evang + p.mormon) %&gt;%
+  filter(state != &quot;&quot;)</code></pre>
 </div>
 <div id="tidying-poststratification" class="section level3">
 <h3>Tidying Poststratification</h3>
@@ -92,9 +93,6 @@ Census &lt;- Census %&gt;%
   mutate(race.female = (cfemale * 3 ) + crace.WBH) %&gt;%
   mutate(age.edu.cat = 4 * (age.cat - 1) + edu.cat) %&gt;%
   mutate(p.relig = p.evang + p.mormon)</code></pre>
-<p>Then we can just include the Census rates as a column in the gay marriage poll data.</p>
-<pre class="r"><code># marriage.data &lt;- Census %&gt;%
-#   select(state, kerry.04, race.female, age.edu.cat)</code></pre>
 </div>
 </div>
 <div id="model-1-disaggragation" class="section level2">
@@ -124,7 +122,6 @@ Census &lt;- Census %&gt;%
 <pre class="r"><code>disag.point &lt;- bind_rows(mod.disag, mod.disag.ps) %&gt;%
   group_by(model) %&gt;%
   arrange(support, .by_group=TRUE) %&gt;%
-  filter(state != &quot;&quot;) %&gt;%
   ggplot(aes(x = support, y=forcats::fct_inorder(state), color=model)) + 
   geom_point() + 
   theme_classic() + theme(legend.position = &#39;none&#39;) +  
@@ -143,20 +140,9 @@ compare_scat &lt;- function(d) {
   )
 }
 
-disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
-  compare_scat()
-
-# disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;%
-#   filter(state != &quot;&quot;) %&gt;%
-#   ggplot(aes(x = support, y=support1)) + 
-#   geom_text(aes(label=state), hjust=0.5, vjust=0.25) +
-#   geom_abline(slope = 1, intercept = 0) +
-#   xlim(c(0,0.7)) + ylim(c(0,0.7)) + 
-#   xlab(&quot;support&quot;) + ylab(&quot;poststrat support&quot;) +
-#   coord_fixed()
-
+disag.scat &lt;- bind_cols(mod.disag, mod.disag.ps) %&gt;% compare_scat()
 plot_grid(disag.point, disag.scat)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>The left plot shows a lot of variation between the poststratified averages. The right plot<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> indicates that every poststratified state average is pushed near zero. That’s not necessarily a problem in its down right, but we should still debug the model.</p>
 <p>Within each state, each group is a certain percentage of the total populations. And the percentages of each group should add up to one, the entire state population:</p>
 <pre class="r"><code>Census %&gt;%
@@ -187,7 +173,7 @@ plot_grid(disag.point, disag.scat)</code></pre>
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) + 
   coord_fixed(ratio=8) + ylim(c(0,1.1))</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 <p>Clearly the survey does not have responses from each demographic group in each state. This lack of data makes poststratifying on the state level uninformative, since there is no subgroup average to make. Implicitly, this model is assuming the missing demographic group’s support is 0%.</p>
 <p>But that isn’t a sound model. Let’s take black men for example. Our survey has no responses from black men in South Dakota, but they make up x% of the state. We would be underestimating the level of support in the state by assuming no black men support gay marriage.</p>
 <p>However, we do have the responses from black men from neighboring states and all other states around the country. It would be better to use that data to make an informative guess for the level of support black men have in South Dakota. This idea motivates the use of multilevel regression.</p>
@@ -265,11 +251,11 @@ plot_grid(disag.point, disag.scat)</code></pre>
 ## &lt;0 rows&gt; (or 0-length row.names)</code></pre>
 <p>no one from Alaska and Hawaii were included in the survey. But by applying the <code>predict</code> function to the Census, not only can we estimate the opinion by applying the overall state average, but we can also break down the opinion by the percentages of demographic groups within Alaska and Hawaii. This gives a more robust state estimate, and allows for poststratification.</p>
 <pre class="r"><code>ps.approx.mod &lt;- Census %&gt;%
-  mutate(pred.support = predict(approx.mod, newdata=., 
+  mutate(support = predict(approx.mod, newdata=., 
                                 allow.new.levels=TRUE, type=&#39;response&#39;)) %&gt;%
-  mutate(pred.support = pred.support * cpercent.state) %&gt;%
+  mutate(support = support * cpercent.state) %&gt;%
   group_by(state) %&gt;%
-  summarise(state.support = sum(pred.support))</code></pre>
+  summarise(support = sum(support))</code></pre>
 <p>We’ll investigate this model further after we build the full Bayesian model.</p>
 </div>
 <div id="model-3-full-bayesian-model" class="section level2">
@@ -344,20 +330,49 @@ bayes.mod %&gt;%
                                 rel_min_height = 0.01, stat = &quot;density&quot;,
                                 scale=1.5) + 
   geom_point(data=approx_sd)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
 <p>The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
 <p>Unlike the previous model which only make predicted values based on the point estimates from the regression, our full Bayesian model makes predictions for each iteration over the posterior. This allows us to poststratify the distribution of possible state-level support for gay marriage:</p>
-<pre class="r"><code>ps.bayes.mod &lt;- bayes.mod %&gt;%
-  add_predicted_samples(newdata=Census, allow_new_levels=TRUE)
-
-ps.bayes.mod %&gt;%
-  ggplot(aes(y=state, x=pred)) +
+<pre class="r"><code>bayes.pred &lt;- bayes.mod %&gt;%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %&gt;%
+  rename(support = pred)
+  
+ps.bayes.mod &lt;- bayes.pred %&gt;%
+  mutate(support = support * cpercent.state) %&gt;%
+  group_by(state) %&gt;%
+  summarise(support = sum(support))
+ps.bayes.mod</code></pre>
+<pre><code>## # A tibble: 51 x 2
+##    state   support
+##    &lt;chr&gt;     &lt;dbl&gt;
+##  1    AK 1382.8190
+##  2    AL  713.8415
+##  3    AR  764.8361
+##  4    AZ 1531.7089
+##  5    CA 1790.7107
+##  6    CO 1637.4628
+##  7    CT 1689.8848
+##  8    DC 2003.2690
+##  9    DE 1346.6506
+## 10    FL 1161.2237
+## # ... with 41 more rows</code></pre>
+<pre class="r"><code>ps.bayes.mod %&gt;%
+  ggplot(aes(y=state, x=support)) +
   ggridges::geom_density_ridges(aes(height=..density..),
                                 rel_min_height = 0.01, stat = &quot;density&quot;)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
+<pre class="r"><code>mod.disag[nrow(mod.disag) + 1,] = list(&quot;AK&quot;, mean(mod.disag$support), &quot;no_ps&quot;)
+mod.disag[nrow(mod.disag) + 1,] = list(&quot;HI&quot;, mean(mod.disag$support), &quot;no_ps&quot;)
+
+disag.approx &lt;- bind_cols(mod.disag, ps.approx.mod) %&gt;% compare_scat()
+disag.bayes &lt;- bind_cols(mod.disag, ps.bayes.mod) %&gt;% compare_scat()
+approx.bayes &lt;- bind_cols(ps.approx.mod, ps.bayes.mod) %&gt;% compare_scat()
+
+plot_grid(disag.approx, disag.bayes, approx.bayes)</code></pre>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
 </div>
 <div class="footnotes">
 <hr />

@@ -1,20 +1,20 @@
 unnamed-chunk-1	
 unnamed-chunk-2	Census	Statelevel	marriage.data
-unnamed-chunk-3	Statelevel	marriage.data
+unnamed-chunk-3	marriage.data	Statelevel
 unnamed-chunk-4	Census
-unnamed-chunk-5	
-unnamed-chunk-6	mod.disag
+unnamed-chunk-5	mod.disag
+unnamed-chunk-6	grp.means
 unnamed-chunk-7	grp.means
-unnamed-chunk-8	grp.means
-unnamed-chunk-9	mod.disag.ps
-unnamed-chunk-10	compare_scat	disag.point	disag.scat
+unnamed-chunk-8	mod.disag.ps
+unnamed-chunk-9	compare_scat	disag.point	disag.scat
+unnamed-chunk-10	
 unnamed-chunk-11	
-unnamed-chunk-12	
-unnamed-chunk-13	approx.mod
+unnamed-chunk-12	approx.mod
+unnamed-chunk-13	
 unnamed-chunk-14	
-unnamed-chunk-15	
-unnamed-chunk-16	ps.approx.mod
-unnamed-chunk-17	bayes.mod	.__C__Rcpp_stan_fit4model424b20233e9a_file424b3bd12634	.__global__	.requireCachedGenerics
-unnamed-chunk-18	
-unnamed-chunk-19	approx_sd
-unnamed-chunk-20	ps.bayes.mod
+unnamed-chunk-15	ps.approx.mod
+unnamed-chunk-16	bayes.mod	.__C__Rcpp_stan_fit4modela35c1644387e_filea35c6a27f11	.__global__	.requireCachedGenerics
+unnamed-chunk-17	
+unnamed-chunk-18	approx_sd
+unnamed-chunk-19	bayes.pred	ps.bayes.mod
+unnamed-chunk-20	approx.bayes	disag.approx	disag.bayes	mod.disag
