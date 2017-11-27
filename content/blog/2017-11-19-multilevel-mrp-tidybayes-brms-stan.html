@@ -342,21 +342,29 @@ ps.bayes.mod &lt;- bayes.pred %&gt;%
   mutate(support = support * cpercent.state) %&gt;%
   group_by(state) %&gt;%
   summarise(support = sum(support))
-ps.bayes.mod</code></pre>
-<pre><code>## # A tibble: 51 x 2
-##    state   support
-##    &lt;chr&gt;     &lt;dbl&gt;
-##  1    AK 0.3457047
-##  2    AL 0.1784604
-##  3    AR 0.1912090
-##  4    AZ 0.3829272
-##  5    CA 0.4476777
-##  6    CO 0.4093657
-##  7    CT 0.4224712
-##  8    DC 0.5008173
-##  9    DE 0.3366627
-## 10    FL 0.2903059
-## # ... with 41 more rows</code></pre>
+
+bayes.pred %&gt;%
+  mean_qi()</code></pre>
+<pre><code>## # A tibble: 4,896 x 20
+## # Groups:   state, p.evang, p.mormon, kerry.04, crace.WBH, age.cat,
+## #   edu.cat, cfemale, .freq, cfreq.state, cpercent.state, region,
+## #   race.female, age.edu.cat, p.relig, .row [4,896]
+##    state p.evang p.mormon kerry.04 crace.WBH age.cat edu.cat cfemale .freq
+##    &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;int&gt;   &lt;int&gt;   &lt;int&gt;   &lt;int&gt; &lt;int&gt;
+##  1    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  2    AK   12.44 3.003126     35.5         1       1       1       1   386
+##  3    AK   12.44 3.003126     35.5         1       1       2       0   958
+##  4    AK   12.44 3.003126     35.5         1       1       2       1   753
+##  5    AK   12.44 3.003126     35.5         1       1       3       0   718
+##  6    AK   12.44 3.003126     35.5         1       1       3       1   736
+##  7    AK   12.44 3.003126     35.5         1       1       4       0   194
+##  8    AK   12.44 3.003126     35.5         1       1       4       1   241
+##  9    AK   12.44 3.003126     35.5         1       2       1       0   377
+## 10    AK   12.44 3.003126     35.5         1       2       1       1   296
+## # ... with 4,886 more rows, and 11 more variables: cfreq.state &lt;dbl&gt;,
+## #   cpercent.state &lt;dbl&gt;, region &lt;chr&gt;, race.female &lt;dbl&gt;,
+## #   age.edu.cat &lt;dbl&gt;, p.relig &lt;dbl&gt;, .row &lt;int&gt;, support &lt;dbl&gt;,
+## #   conf.low &lt;dbl&gt;, conf.high &lt;dbl&gt;, .prob &lt;dbl&gt;</code></pre>
 <pre class="r"><code>ps.bayes.mod %&gt;%
   ggplot(aes(y=state, x=support)) +
   ggridges::geom_density_ridges(aes(height=..density..),
