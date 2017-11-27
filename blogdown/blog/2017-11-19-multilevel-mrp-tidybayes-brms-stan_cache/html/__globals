@@ -16,5 +16,5 @@ unnamed-chunk-15	ps.approx.mod	Census	%>%	mutate	predict	approx.mod	.	support	cp
 unnamed-chunk-16	bayes.mod	brm	yes.of.all	race.female	age.cat	edu.cat	age.edu.cat	state	region	p.relig	kerry.04	marriage.data	bernoulli	c	set_prior
 unnamed-chunk-17	summary	bayes.mod
 unnamed-chunk-18	library	tidybayes	approx_sd	tidy	approx.mod	%>%	filter	str_detect	term	bayes.mod	gather_samples	`sd_.*`	ungroup	mutate	str_replace_all	c	ggplot	aes	group	estimate	geom_density_ridges	..density..	geom_point
-unnamed-chunk-19	bayes.pred	bayes.mod	%>%	add_predicted_samples	Census	rename	pred	ps.bayes.mod	mutate	support	cpercent.state	group_by	state	summarise	sum	ggplot	aes	geom_density_ridges	..density..
-unnamed-chunk-20	mod.disag	nrow	list	mean	support	disag.approx	bind_cols	ps.approx.mod	%>%	compare_scat	disag.bayes	ps.bayes.mod	approx.bayes	plot_grid
+unnamed-chunk-19	bayes.pred	bayes.mod	%>%	add_predicted_samples	Census	rename	pred	ps.bayes.mod	mean_qi	mutate	support	cpercent.state	group_by	state	summarise	sum	ggplot	aes	geom_density_ridges	..density..
+unnamed-chunk-20	mod.disag	nrow	list	mean	support	disag.approx	bind_cols	ps.approx.mod	%>%	compare_scat	xlab	ylab	disag.bayes	ps.bayes.mod	approx.bayes	plot_grid

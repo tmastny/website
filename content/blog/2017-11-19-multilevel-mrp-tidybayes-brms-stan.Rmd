@@ -323,11 +323,11 @@ mod.disag[nrow(mod.disag) + 1,] = list("AK", mean(mod.disag$support), "no_ps")
 mod.disag[nrow(mod.disag) + 1,] = list("HI", mean(mod.disag$support), "no_ps")
 
 disag.approx <- bind_cols(mod.disag, ps.approx.mod) %>% compare_scat() +
-  xlabs("disag model") + ylabs("approx mod")
+  xlab("disag model") + ylab("approx mod")
 disag.bayes <- bind_cols(mod.disag, ps.bayes.mod) %>% compare_scat() + 
-  xlabs("disag model") + ylabs("bayes model")
+  xlab("disag model") + ylab("bayes model")
 approx.bayes <- bind_cols(ps.approx.mod, ps.bayes.mod) %>% compare_scat() + 
-  xlabs("approx model") + ylabs("bayes model")
+  xlab("approx model") + ylab("bayes model")
 
 plot_grid(disag.approx, disag.bayes, approx.bayes)
 ```

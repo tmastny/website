@@ -338,6 +338,7 @@ bayes.mod %&gt;%
   rename(support = pred)
   
 ps.bayes.mod &lt;- bayes.pred %&gt;%
+  mean_qi() %&gt;%
   mutate(support = support * cpercent.state) %&gt;%
   group_by(state) %&gt;%
   summarise(support = sum(support))
@@ -345,16 +346,16 @@ ps.bayes.mod</code></pre>
 <pre><code>## # A tibble: 51 x 2
 ##    state   support
 ##    &lt;chr&gt;     &lt;dbl&gt;
-##  1    AK 1382.8190
-##  2    AL  713.8415
-##  3    AR  764.8361
-##  4    AZ 1531.7089
-##  5    CA 1790.7107
-##  6    CO 1637.4628
-##  7    CT 1689.8848
-##  8    DC 2003.2690
-##  9    DE 1346.6506
-## 10    FL 1161.2237
+##  1    AK 0.3457047
+##  2    AL 0.1784604
+##  3    AR 0.1912090
+##  4    AZ 0.3829272
+##  5    CA 0.4476777
+##  6    CO 0.4093657
+##  7    CT 0.4224712
+##  8    DC 0.5008173
+##  9    DE 0.3366627
+## 10    FL 0.2903059
 ## # ... with 41 more rows</code></pre>
 <pre class="r"><code>ps.bayes.mod %&gt;%
   ggplot(aes(y=state, x=support)) +
@@ -367,9 +368,12 @@ ps.bayes.mod</code></pre>
 <pre class="r"><code>mod.disag[nrow(mod.disag) + 1,] = list(&quot;AK&quot;, mean(mod.disag$support), &quot;no_ps&quot;)
 mod.disag[nrow(mod.disag) + 1,] = list(&quot;HI&quot;, mean(mod.disag$support), &quot;no_ps&quot;)
 
-disag.approx &lt;- bind_cols(mod.disag, ps.approx.mod) %&gt;% compare_scat()
-disag.bayes &lt;- bind_cols(mod.disag, ps.bayes.mod) %&gt;% compare_scat()
-approx.bayes &lt;- bind_cols(ps.approx.mod, ps.bayes.mod) %&gt;% compare_scat()
+disag.approx &lt;- bind_cols(mod.disag, ps.approx.mod) %&gt;% compare_scat() +
+  xlab(&quot;disag model&quot;) + ylab(&quot;approx mod&quot;)
+disag.bayes &lt;- bind_cols(mod.disag, ps.bayes.mod) %&gt;% compare_scat() + 
+  xlab(&quot;disag model&quot;) + ylab(&quot;bayes model&quot;)
+approx.bayes &lt;- bind_cols(ps.approx.mod, ps.bayes.mod) %&gt;% compare_scat() + 
+  xlab(&quot;approx model&quot;) + ylab(&quot;bayes model&quot;)
 
 plot_grid(disag.approx, disag.bayes, approx.bayes)</code></pre>
 <p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
