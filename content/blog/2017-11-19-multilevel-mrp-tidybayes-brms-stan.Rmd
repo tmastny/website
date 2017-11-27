@@ -308,13 +308,11 @@ ps.bayes.mod <- bayes.pred %>%
   group_by(state) %>%
   summarise(support = sum(support))
 
-bayes.pred %>%
-  mean_qi()
-
 ps.bayes.mod %>%
   ggplot(aes(y=state, x=support)) +
   ggridges::geom_density_ridges(aes(height=..density..),
-                                rel_min_height = 0.01, stat = "density")
+                                rel_min_height = 0.01, stat = "density",
+                                scale=1)
 ```
 
 
