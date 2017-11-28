@@ -333,14 +333,18 @@ Although the parameter values differed between the approximate and the full Baye
 However, the point estimate in the Bayesian model doesn't take full advantage of the posterior distribution `brms` and Stan calculate. For that, we can sample the posterior distribution for the entire census data 500 times and see the distribution of poststratified support for gay marriage within each state.
 
 ```{r}
-predict(bayes.mod, newdata=Census, allow_new_levels=TRUE, nsamples=500)
+str(predict(bayes.mod, newdata=Census, allow_new_levels=TRUE, 
+        nsamples=500, summary=FALSE))
+```
+
+```{r}
 # bayes.mod %>%
 #   add_predicted_samples(newdata=Census, allow_new_levels=TRUE,
-#                         nsamples=500) %>%
-#   rename(support = pred) %>%
-#   mutate(support = support * cpercent.state) %>%
-#   group_by(.iteration, add = TRUE) %>% 
-#   mean_qi()
+#                         nsamples=500)
+  # rename(support = pred) %>%
+  # mutate(support = support * cpercent.state) %>%
+  # group_by(.iteration, add = TRUE) %>%
+  # mean_qi()
 ```
 
 
