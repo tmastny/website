@@ -310,11 +310,10 @@ ps.bayes.mod <- bayes.pred %>%
 ```
 
 ```{r}
-ps.bayes.mod %>%
+bayes.pred %>%
   select(state, support)
 
-ps.bayes.mod %>%
-  filter(state == 'NE') %>%
+bayes.pred %>%
   ggplot(aes(y=state, x=support)) +
   ggridges::geom_density_ridges(aes(height=..density..),
                                 rel_min_height = 0.01, stat = "density",
