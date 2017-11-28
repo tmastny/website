@@ -295,34 +295,24 @@ bayes.mod %>%
 
 The Bayesian model provides a distribution of all possible standard deviations that the varying intercepts could be sampled from, while the approximate model only provides a single point estimate^[Technically, we could calculate the standard error from the approximate model. However, it [may not be accurate](https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer) and it is computationally expensive. It took me way longer to calculate the standard error via bootstrapping compared to fitting the full Bayesian model in `brms`.]. Moreover, that point estimate does not necessarily reflect the mean of the distributions. In general, point approximates cannot quantify uncertainty and are more likely to overfit the data^[Check out [this article](https://towardsdatascience.com/understanding-objective-functions-in-neural-networks-d217cb068138) for a nice discussion in the context of machine learning.].
 
-Unlike the previous model which only make predicted values based on the point estimates from the regression, our full Bayesian model makes predictions for each iteration over the posterior. This allows us to poststratify the distribution of possible state-level support for gay marriage:
+But first, let's compute the point estimate for the level of state support for gay marriage and poststratify. As in the approximate model, we want to fit this model on the Census data.
 
 ```{r, cache.lazy = FALSE}
-bayes.pred <- bayes.mod %>%
+ps.bayes.mod <- bayes.mod %>%
   add_predicted_samples(newdata=Census, allow_new_levels=TRUE) %>%
-  rename(support = pred)
-  
-ps.bayes.mod <- bayes.pred %>%
+  rename(support = pred) %>%
   mean_qi() %>%
   mutate(support = support * cpercent.state) %>%
   group_by(state) %>%
   summarise(support = sum(support))
 ```
 
-```{r}
-bayes.pred %>%
-  select(state, support)
-
-bayes.pred %>%
-  ggplot(aes(y=state, x=support)) +
-  ggridges::geom_density_ridges(aes(height=..density..),
-                                rel_min_height = 0.01, stat = "density",
-                                scale=1)
-```
+In the next section, we'll compare all three models using point estimates and we'll work to include uncertainty from the Bayesian model.
 
 
 ## Model Comparisons
 
+Using the comparison scatterplots, we can easily see the changes between each model.
 
 ```{r}
 mod.disag[nrow(mod.disag) + 1,] = list("AK", mean(mod.disag$support), "no_ps")
@@ -336,6 +326,30 @@ approx.bayes <- bind_cols(ps.approx.mod, ps.bayes.mod) %>% compare_scat() +
   xlab("approx model") + ylab("bayes model")
 
 plot_grid(disag.approx, disag.bayes, approx.bayes)
+```
+
+Although the parameter values differed between the approximate and the full Bayesian model, the predictions are near identical.
+
+However, the point estimate in the Bayesian model doesn't take full advantage of the posterior distribution `brms` and Stan calculate. For that, we can sample the posterior distribution for the entire census data 500 times and see the distribution of poststratified support for gay marriage within each state.
+
+```{r}
+predict(bayes.mod, newdata=Census, allow_new_levels=TRUE, nsamples=500)
+# bayes.mod %>%
+#   add_predicted_samples(newdata=Census, allow_new_levels=TRUE,
+#                         nsamples=500) %>%
+#   rename(support = pred) %>%
+#   mutate(support = support * cpercent.state) %>%
+#   group_by(.iteration, add = TRUE) %>% 
+#   mean_qi()
+```
+
+
+```{r}
+# bayes.pred %>%
+#   ggplot(aes(y=state, x=support)) +
+#   ggridges::geom_density_ridges(aes(height=..density..),
+#                                 rel_min_height = 0.01, stat = "density",
+#                                 scale=1)
 ```
 
 
