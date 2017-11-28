@@ -17,4 +17,5 @@ unnamed-chunk-16	bayes.mod	.__C__Rcpp_stan_fit4modela35c1644387e_filea35c6a27f11
 unnamed-chunk-17	
 unnamed-chunk-18	approx_sd
 unnamed-chunk-19	bayes.pred	ps.bayes.mod
-unnamed-chunk-20	approx.bayes	disag.approx	disag.bayes	mod.disag
+unnamed-chunk-20	
+unnamed-chunk-21	approx.bayes	disag.approx	disag.bayes	mod.disag

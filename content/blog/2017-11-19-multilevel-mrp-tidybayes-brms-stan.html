@@ -341,14 +341,30 @@ ps.bayes.mod &lt;- bayes.pred %&gt;%
   mean_qi() %&gt;%
   mutate(support = support * cpercent.state) %&gt;%
   group_by(state) %&gt;%
-  summarise(support = sum(support))
-
-ps.bayes.mod %&gt;%
+  summarise(support = sum(support))</code></pre>
+<pre class="r"><code>ps.bayes.mod %&gt;%
+  select(state, support)</code></pre>
+<pre><code>## # A tibble: 51 x 2
+##    state   support
+##    &lt;chr&gt;     &lt;dbl&gt;
+##  1    AK 0.3457047
+##  2    AL 0.1784604
+##  3    AR 0.1912090
+##  4    AZ 0.3829272
+##  5    CA 0.4476777
+##  6    CO 0.4093657
+##  7    CT 0.4224712
+##  8    DC 0.5008173
+##  9    DE 0.3366627
+## 10    FL 0.2903059
+## # ... with 41 more rows</code></pre>
+<pre class="r"><code>ps.bayes.mod %&gt;%
+  filter(state == &#39;NE&#39;) %&gt;%
   ggplot(aes(y=state, x=support)) +
   ggridges::geom_density_ridges(aes(height=..density..),
                                 rel_min_height = 0.01, stat = &quot;density&quot;,
                                 scale=1)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
 </div>
 <div id="model-comparisons" class="section level2">
 <h2>Model Comparisons</h2>
@@ -363,14 +379,14 @@ approx.bayes &lt;- bind_cols(ps.approx.mod, ps.bayes.mod) %&gt;% compare_scat() 
   xlab(&quot;approx model&quot;) + ylab(&quot;bayes model&quot;)
 
 plot_grid(disag.approx, disag.bayes, approx.bayes)</code></pre>
-<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p><img src="/blog/2017-11-19-multilevel-mrp-tidybayes-brms-stan_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
 </div>
 <div class="footnotes">
 <hr />
 <ol>
 <li id="fn1"><p>The idea for this plot comes from Matt Vuorre, who called them <a href="https://mvuorre.github.io/post/2017/within-subject-scatter/">with-subject scatterplots</a> in his blog post. Austin Rochford also uses a similar chart in his MRP Prime walkthrough. And I am using the <a href="http://andrewgelman.com/2009/01/14/state-by-state/">two letter</a> state <a href="http://andrewgelman.com/2014/05/16/gullibility-effect-using-state-level-correlations-draw-pretty-much-conclusion-want-individual-level-causation/">abbreviation</a> labels instead of points as Gelman recommends.<a href="#fnref1">↩</a></p></li>
 <li id="fn2"><p>By design the Census provides every combination of demographic groups within each state. If that wasn’t the case, I would enter in each unique demographic and state factor into <a href="https://github.com/tidyverse/modelr"><code>modelr::data_grid</code></a>, which would automiatcally generate every possible combination of results. This is a very useful tool.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>Technically, we could calculate the standard error from the approximate model. However, it <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">may not be accurate</a> and it is computationally expensive. It took way longer to calculate the standard error via bootstrapping compared to fitting the full Bayesian model in <code>brms</code>.<a href="#fnref3">↩</a></p></li>
+<li id="fn3"><p>Technically, we could calculate the standard error from the approximate model. However, it <a href="https://stackoverflow.com/questions/31694812/standard-error-of-variance-component-from-the-output-of-lmer">may not be accurate</a> and it is computationally expensive. It took me way longer to calculate the standard error via bootstrapping compared to fitting the full Bayesian model in <code>brms</code>.<a href="#fnref3">↩</a></p></li>
 <li id="fn4"><p>Check out <a href="https://towardsdatascience.com/understanding-objective-functions-in-neural-networks-d217cb068138">this article</a> for a nice discussion in the context of machine learning.<a href="#fnref4">↩</a></p></li>
 </ol>
 </div>
