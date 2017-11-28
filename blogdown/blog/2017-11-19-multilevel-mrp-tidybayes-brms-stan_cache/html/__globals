@@ -19,5 +19,5 @@ unnamed-chunk-18	library	tidybayes	approx_sd	tidy	approx.mod	%>%	filter	str_dete
 unnamed-chunk-19	ps.bayes.mod	bayes.mod	%>%	add_predicted_samples	Census	rename	pred	mean_qi	mutate	support	cpercent.state	group_by	state	summarise	sum
 unnamed-chunk-20	mod.disag	nrow	list	mean	support	disag.approx	bind_cols	ps.approx.mod	%>%	compare_scat	xlab	ylab	disag.bayes	ps.bayes.mod	approx.bayes	plot_grid
 unnamed-chunk-21	str	predict	bayes.mod	Census
-unnamed-chunk-22	
+unnamed-chunk-22	bayes.mod	%>%	add_predicted_samples	Census
 unnamed-chunk-23	

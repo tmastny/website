@@ -338,9 +338,8 @@ str(predict(bayes.mod, newdata=Census, allow_new_levels=TRUE,
 ```
 
 ```{r}
-# bayes.mod %>%
-#   add_predicted_samples(newdata=Census, allow_new_levels=TRUE,
-#                         nsamples=500)
+bayes.mod %>%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE, n=500)
   # rename(support = pred) %>%
   # mutate(support = support * cpercent.state) %>%
   # group_by(.iteration, add = TRUE) %>%

@@ -362,10 +362,29 @@ plot_grid(disag.approx, disag.bayes, approx.bayes)</code></pre>
 <pre class="r"><code>str(predict(bayes.mod, newdata=Census, allow_new_levels=TRUE, 
         nsamples=500, summary=FALSE))</code></pre>
 <pre><code>##  int [1:500, 1:4896] 1 0 0 0 1 1 0 1 0 0 ...</code></pre>
-<pre class="r"><code># bayes.mod %&gt;%
-#   add_predicted_samples(newdata=Census, allow_new_levels=TRUE,
-#                         nsamples=500)
-  # rename(support = pred) %&gt;%
+<pre class="r"><code>bayes.mod %&gt;%
+  add_predicted_samples(newdata=Census, allow_new_levels=TRUE, n=500)</code></pre>
+<pre><code>## # A tibble: 2,448,000 x 19
+## # Groups:   state, p.evang, p.mormon, kerry.04, crace.WBH, age.cat,
+## #   edu.cat, cfemale, .freq, cfreq.state, cpercent.state, region,
+## #   race.female, age.edu.cat, p.relig, .row [4,896]
+##    state p.evang p.mormon kerry.04 crace.WBH age.cat edu.cat cfemale .freq
+##    &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;     &lt;int&gt;   &lt;int&gt;   &lt;int&gt;   &lt;int&gt; &lt;int&gt;
+##  1    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  2    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  3    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  4    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  5    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  6    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  7    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  8    AK   12.44 3.003126     35.5         1       1       1       0   467
+##  9    AK   12.44 3.003126     35.5         1       1       1       0   467
+## 10    AK   12.44 3.003126     35.5         1       1       1       0   467
+## # ... with 2,447,990 more rows, and 10 more variables: cfreq.state &lt;dbl&gt;,
+## #   cpercent.state &lt;dbl&gt;, region &lt;chr&gt;, race.female &lt;dbl&gt;,
+## #   age.edu.cat &lt;dbl&gt;, p.relig &lt;dbl&gt;, .row &lt;int&gt;, .chain &lt;int&gt;,
+## #   .iteration &lt;int&gt;, pred &lt;int&gt;</code></pre>
+<pre class="r"><code>  # rename(support = pred) %&gt;%
   # mutate(support = support * cpercent.state) %&gt;%
   # group_by(.iteration, add = TRUE) %&gt;%
   # mean_qi()</code></pre>
