@@ -1,0 +1,35 @@
+---
+title: Bayesian Meta-Analysis of Periodization in Strength Training
+author: ~
+date: '2018-01-13'
+slug: bayesian-meta-analysis-periodization-brms
+categories: []
+tags: []
+description: Bayesian Meta-Analysis of Periodization with brms 
+meta_img: /images/image.jpg
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-cleaning">Data Cleaning</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Greg Nuckols, a powerlifting coach, graduate student, and all around smart guy just did an excellent meta-analytic study on periodization methods in strength training on his website <a href="https://www.strongerbyscience.com/periodization-data/">Strong By Science</a>. Instead of the classical random effects meta-analysis, Greg’s methodology included looking at various permutations of percent changes in strength levels across exercises, time periods, and periodization methods.</p>
+<p>Consistent with open science principles, Greg shared his data set and encouraged anyone who was interested to do their own analysis. I have full confidence in Greg’s conclusions, but being interested in both Bayesian statistics and powerlifting, I thought this was an excellent opportunity to combine the two pursuits.</p>
+<p>In the article, Greg noted that he did not follow the classic methodology of a random effects model because some studies reported such small standard deviations that the effects sizes were totally implausible.</p>
+<p>Greg’s general concern of implausible effects sizes is well warranted. The standard criteria of statistical significant almost assures that the <a href="http://andrewgelman.com/2016/11/13/more-on-my-paper-with-john-carlin-on-type-m-and-type-s-errors/">effect size is exaggerated</a>. Gelman and Carlin call this phenomenon a Type M (magnitude) error. I strongly recommend reading <a href="http://www.stat.columbia.edu/~gelman/research/published/retropower_final.pdf">their excellent paper</a> on the subject, where they analyze suspect effect sizes using prior information.</p>
+<p>Therefore, I believe this will be an excellent application of Bayesian Data Analysis. First, a Bayesian analysis would provide a formal way to include Greg’s prior information of plausible effects sizes into the systematic analysis. Second, even without including prior information, the Bayesian approach is a natural way to apply a random effects, or multilevel, model to a meta-analysis. <a href="https://mvuorre.github.io/post/2016/2016-09-29-bayesian-meta-analysis/">Matti Vuorre</a> already has an excellent blog post on this topic.</p>
+</div>
+<div id="data-cleaning" class="section level2">
+<h2>Data Cleaning</h2>
+<p>Before the analysis, we need to <a href="https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html">tidy the data</a>. Looking at <a href="https://docs.google.com/spreadsheets/d/1uT2ZZ_PZEf_4YefPMSSxanwLWayzhwsgC0rnv6XSgU4/edit#gid=0">Greg’s spreadsheet</a> in Google Sheets, you can see it is optimized for human reading instead of for processing in statistical software. For example, each observation is not completely filled out: easy on the eyes, but can lead to difficulties programmatically.</p>
+<p>Overall, the spreadsheet is pretty good. It doesn’t violate any of the <a href="http://blog.revolutionanalytics.com/2017/11/good-practices-spreadsheets.html">cardinal spreadsheet sins</a> such as - merged cells - data as formatting - formulas within raw data</p>
+</div>
