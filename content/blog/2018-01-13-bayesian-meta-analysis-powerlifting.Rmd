@@ -7,7 +7,7 @@ categories: []
 tags: []
 description: Bayesian Meta-Analysis of Periodization with brms 
 meta_img: /images/image.jpg
-draft: yes
+draft: true
 output:
   blogdown::html_page:
     toc: true
