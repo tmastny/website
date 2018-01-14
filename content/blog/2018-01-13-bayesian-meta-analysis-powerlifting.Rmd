@@ -34,14 +34,17 @@ Therefore, I believe this will be an excellent application of Bayesian Data Anal
 
 ## Data Cleaning
 
-Before the analysis, we need to [tidy the data](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html). Looking at [Greg's spreadsheet](https://docs.google.com/spreadsheets/d/1uT2ZZ_PZEf_4YefPMSSxanwLWayzhwsgC0rnv6XSgU4/edit#gid=0) in Google Sheets, you can see it is optimized for human reading instead of for processing in statistical software. For example, each observation is not completely filled out: easy on the eyes, but can lead to difficulties programmatically. 
+Before the analysis, we need to [tidy the data](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html). Looking at [Greg's spreadsheet](https://docs.google.com/spreadsheets/d/1uT2ZZ_PZEf_4YefPMSSxanwLWayzhwsgC0rnv6XSgU4/edit#gid=0) in Google Sheets, you can see it is optimized for human reading instead of for processing in statistical software.
 
-![spreadsheet picture](blog/spreadsheet_pic.png)
+![](/blog/spreadsheet_pic.png)
+
+Each observation is not completely filled out: easy on the eyes, but can lead to difficulties when programming analyzes. 
 
 Overall, the spreadsheet is pretty good. It doesn't violate any of the [cardinal spreadsheet sins](http://blog.revolutionanalytics.com/2017/11/good-practices-spreadsheets.html) such as
-- merged cells
-- data as formatting
-- formulas within raw data
+
+  - merged cells
+  - data as formatting
+  - formulas within raw data
 
 
 
