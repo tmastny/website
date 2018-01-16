@@ -1,0 +1,39 @@
+---
+title: Tidying Messy Spreadsheets
+author: ~
+date: '2018-01-13'
+slug: tidying-messy-spreadsheets-dplyr
+categories: []
+tags: []
+description: Tidying Messy Spreadsheets with dplyr and tidyr 
+meta_img: /images/image.jpg
+publishdate: '2018-01-20'
+output:
+  blogdown::html_page:
+    toc: true
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#cleaning">Cleaning</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This post is part introduction, part appendix. This first goal of this post is to be an introduction to cleaning and preparing a messy spreadsheet as part of a data science pipeline. In schools, training, or book exercises the data is served in a convenient format that is immediately ready to be subjected to an array of algorithms from which we hope to drive some insight. But as Hadley explains in <a href="https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html">transformative paper</a>, the reality is that the data scientists spends 80% of preparing their data for analysis, and only 20% on the analysis itself. In this article, Hadley identifies key characteristics of data that is ready for analysis, which he calls “tidy”. He also introduces packages for R that facilitate tidying data, which he has collected under the the brand <a href="https://www.tidyverse.org/">tidyverse</a>. We are going to use these tools, particularly <code>dplyr</code> and <code>tidyr</code> to tidy a messy spreadsheet.</p>
+<p>This post also serves as an appendix to a future blog post analyzing Greg Nuckol’s meta-analysis on periodization in strength training found on his website <a href="https://www.strongerbyscience.com/periodization-data/">Strong By Science</a>. Greg shared his data and encouraged others to analyze it, which is absolutely fantastic. However, the data is not well suited for analysis by statistical programs as is.</p>
+<p>I want to make it clear that I’m not picking on Greg and this isn’t an indictment of his skills as a researcher. I’ve created my fair share of <a href="https://twitter.com/hadleybeeman/status/934867384577462274">feral systems</a>. And as Hadley explains in his paper, tidy data, which is data organized for computer analysis, often sacrifices human readability and has various other <a href="https://simplystatistics.org/2016/02/17/non-tidy-data/">trade-offs</a>.In fact, I commend Greg’s own analysis and his willingness to share his data.</p>
+<p>Finally, note that the R script, the original data, and the final tidy data can all be found in the <a href="https://github.com/tmastny/periodization-meta-analysis">github repo</a> I created to analyze Greg’s work.</p>
+</div>
+<div id="cleaning" class="section level2">
+<h2>Cleaning</h2>
+<p>The first issue is that the spreadsheet is optimized for human reading instead of for processing with statistical software.</p>
+<div class="figure">
+<img src="/blog/spreadsheet_pic.png" />
+
+</div>
+<p>As you can see above, each observation is not completely filled out. This makes it easier to read, but can lead to difficulties when writing programs and scripts. Luckily there doesn’t seem to be other common <a href="http://blog.revolutionanalytics.com/2017/11/good-practices-spreadsheets.html">spreadsheet issues</a> formatting as data or formulas. There are a few merged cells, but they aren’t across rows and they are over studies that I won’t include in my analysis. I’ll discuss my inclusive criteria in the methodology section.</p>
+</div>
