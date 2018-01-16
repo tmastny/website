@@ -1,7 +1,11 @@
 base
-datasets
-utils
-grDevices
-graphics
-stats
-methods
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+magrittr
