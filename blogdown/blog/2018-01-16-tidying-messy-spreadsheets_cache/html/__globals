@@ -1,7 +1,0 @@
-spatial	library	tidyverse	magrittr	d	read_excel	i	nrow	is.na	c
-unnamed-chunk-1	is.numeric	d	`Other 1 pre`	is.character
-unnamed-chunk-2	d
-remove_url	d	`Other 1 pre`	as.numeric
-declutter	
-gather_variables	d	%<>%	gather	type	outcome	`LBM Pre`	`ES 1 vs. 3__4`
-unnamed-chunk-3	head	d

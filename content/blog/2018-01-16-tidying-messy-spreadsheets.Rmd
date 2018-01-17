@@ -120,7 +120,7 @@ head(d %>% filter(Number == 1) %>% select(-`Program Details`))
 
 On second thought, I would contend that the `outcome_measurements` columns now violates principle one: *one variable per column*. For comparison, `outcome_type` is definitely one variable. It indicates what the study was actually measuring as an outcome. But `outcome_measurements` is a collection of three different variables, pre, post, and sd that measure some aspect of the `outcome_type`. Therefore, we need to separate into their own column.
 
-This part is a little tricky. I recommend this stackoverflow [link]([https://stackoverflow.com/questions/43259380/spread-with-duplicate-identifiers-using-tidyverse-and?noredirect=1&lq=1) for some extract details. 
+This part is a little tricky. I recommend this stackoverflow [link]([https://stackoverflow.com/questions/43259380/spread-with-duplicate-identifiers-using-tidyverse-and?noredirect=1&lq=1) for additional details. 
 
 Let's take a look at what we have for study 1:
 
@@ -128,14 +128,42 @@ Let's take a look at what we have for study 1:
 d %>% filter(Number == 1) %>% select(-N, -Number)
 ```
 
-So we need
+This data is grouped and we can exploit that structure. We need to sub divide by each column, and then spread the `outcome_measurements` to a column containing the `outcome` numeric. 
+
+```{r}
+d %>% 
+  filter(Number == 1) %>%
+  select(-N, -Number) %>%
+  mutate_if(is.character, funs(factor(.))) %>%
+  group_by(
+    `Program Label`, `Program Details`, outcome_type, outcome_measurements) %>%
+  spread(outcome_measurements, outcome)
+```
+
+This works perfect. Let's apply it to the rest of the data set:
+
+```{r group_by, error = TRUE}
+```
+
+We got an error, but we can work with this. It tells us where `spread` sees identical groups. This is most likely missing data, which tells us not every study is organized as nicely study 1.  
+
+```{r}
+d[c(114, 115, 120, 121, 122, 123, 90, 91, 96, 97, 98, 99, 102, 103, 108, 109, 110, 111),]
+```
+
+As expected, lots of missing data. Seemingly important data such as Program Label, Details, and participants. There is a temptation just to toss it out, but let's go to the source too if we are missing anything.
+
+If we refer back to the original data, it looks like the missing data is a strange encoding of some smaller muscles like elbow flexors and triceps. I'm going to exclude it, because it would probably take some manual data manipulation to fix. Also, in the next blog post I'm going to focus on squat and bench anyway.
+
+So let's try it without those rows:
+
+```{r fix_data}
+```
 
 ```{r group_by}
 ```
 
-
-
-
+And we have no errors!
 
 
 

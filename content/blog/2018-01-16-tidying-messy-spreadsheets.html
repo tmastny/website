@@ -152,7 +152,7 @@ d$outcome &lt;- as.numeric(d$outcome)</code></pre>
 ## 5   1.00  23.0 NP              squat        sd                     0.105
 ## 6   1.00  23.0 LP/BP           squat        sd                     0.105</code></pre>
 <p>On second thought, I would contend that the <code>outcome_measurements</code> columns now violates principle one: <em>one variable per column</em>. For comparison, <code>outcome_type</code> is definitely one variable. It indicates what the study was actually measuring as an outcome. But <code>outcome_measurements</code> is a collection of three different variables, pre, post, and sd that measure some aspect of the <code>outcome_type</code>. Therefore, we need to separate into their own column.</p>
-<p>This part is a little tricky. I recommend this stackoverflow <a href="%5Bhttps://stackoverflow.com/questions/43259380/spread-with-duplicate-identifiers-using-tidyverse-and?noredirect=1&amp;lq=1">link</a> for some extract details.</p>
+<p>This part is a little tricky. I recommend this stackoverflow <a href="%5Bhttps://stackoverflow.com/questions/43259380/spread-with-duplicate-identifiers-using-tidyverse-and?noredirect=1&amp;lq=1">link</a> for additional details.</p>
 <p>Let’s take a look at what we have for study 1:</p>
 <pre class="r"><code>d %&gt;% filter(Number == 1) %&gt;% select(-N, -Number)</code></pre>
 <pre><code>## # A tibble: 18 x 5
@@ -176,15 +176,67 @@ d$outcome &lt;- as.numeric(d$outcome)</code></pre>
 ## 16 NP              5x10RM (78.9%); … bench        post             1.41   
 ## 17 NP              6x8RM (83.3%); w… bench        post             1.43   
 ## 18 LP/BP           5x10RM for 4 wee… bench        post             1.60</code></pre>
-<p>So we need</p>
+<p>This data is grouped and we can exploit that structure. We need to sub divide by each column, and then spread the <code>outcome_measurements</code> to a column containing the <code>outcome</code> numeric.</p>
+<pre class="r"><code>d %&gt;% 
+  filter(Number == 1) %&gt;%
+  select(-N, -Number) %&gt;%
+  mutate_if(is.character, funs(factor(.))) %&gt;%
+  group_by(
+    `Program Label`, `Program Details`, outcome_type, outcome_measurements) %&gt;%
+  spread(outcome_measurements, outcome)</code></pre>
+<pre><code>## # A tibble: 6 x 6
+## # Groups: Program Label, Program Details, outcome_type [6]
+##   `Program Label` `Program Details`       outcome_type  post   pre      sd
+## * &lt;fct&gt;           &lt;fct&gt;                   &lt;fct&gt;        &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 LP/BP           5x10RM for 4 weeks, 4x… bench         1.60  1.28 0.00200
+## 2 LP/BP           5x10RM for 4 weeks, 4x… squat         2.02  1.48 0.105  
+## 3 NP              5x10RM (78.9%); weight… bench         1.41  1.28 0.00200
+## 4 NP              5x10RM (78.9%); weight… squat         1.74  1.48 0.105  
+## 5 NP              6x8RM (83.3%); weights… bench         1.43  1.28 0.00200
+## 6 NP              6x8RM (83.3%); weights… squat         1.89  1.48 0.105</code></pre>
+<p>This works perfect. Let’s apply it to the rest of the data set:</p>
 <pre class="r"><code>d %&lt;&gt;% 
   mutate_if(is.character, funs(factor(.))) %&gt;%
   group_by(
     outcome_type, outcome_measurements, Number, `Program Label`, `Program Details`) %&gt;%
-  mutate(i = row_number()) %&gt;%
   spread(outcome_measurements, outcome) %&gt;%
-  ungroup() %&gt;%
-  select(-i)</code></pre>
+  ungroup()</code></pre>
+<pre><code>## Error: Duplicate identifiers for rows (114, 115), (120, 121, 122, 123), (90, 91), (96, 97, 98, 99), (102, 103), (108, 109, 110, 111)</code></pre>
+<p>We got an error, but we can work with this. It tells us where <code>spread</code> sees identical groups. This is most likely missing data, which tells us not every study is organized as nicely study 1.</p>
+<pre class="r"><code>d[c(114, 115, 120, 121, 122, 123, 90, 91, 96, 97, 98, 99, 102, 103, 108, 109, 110, 111),]</code></pre>
+<pre><code>## # A tibble: 18 x 7
+##    Number     N `Program Label` `Program Details` outcome_type
+##     &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;           &lt;chr&gt;             &lt;chr&gt;       
+##  1   35.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  2   35.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  3   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  4   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  5   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  6   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  7   35.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  8   35.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+##  9   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 10   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 11   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 12   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 13   35.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 14   35.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 15   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 16   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 17   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## 18   47.0    NA &lt;NA&gt;            &lt;NA&gt;              mt          
+## # ... with 2 more variables: outcome_measurements &lt;chr&gt;, outcome &lt;dbl&gt;</code></pre>
+<p>As expected, lots of missing data. Seemingly important data such as Program Label, Details, and participants. There is a temptation just to toss it out, but let’s go to the source too if we are missing anything.</p>
+<p>If we refer back to the original data, it looks like the missing data is a strange encoding of some smaller muscles like elbow flexors and triceps. I’m going to exclude it, because it would probably take some manual data manipulation to fix. Also, in the next blog post I’m going to focus on squat and bench anyway.</p>
+<p>So let’s try it without those rows:</p>
+<pre class="r"><code>d &lt;- d[-c(114, 115, 120, 121, 122, 123, 90, 91, 96, 97, 98, 99, 102, 103, 108, 109, 110, 111),]</code></pre>
+<pre class="r"><code>d %&lt;&gt;% 
+  mutate_if(is.character, funs(factor(.))) %&gt;%
+  group_by(
+    outcome_type, outcome_measurements, Number, `Program Label`, `Program Details`) %&gt;%
+  spread(outcome_measurements, outcome) %&gt;%
+  ungroup()</code></pre>
+<p>And we have no errors!</p>
 </div>
 <div id="conclusions" class="section level2">
 <h2>Conclusions</h2>
